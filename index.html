@@ -8,19 +8,10 @@
 <style>
 body {
   margin:0;
-  padding:0;
+  padding:20px;
   font-family: Arial, sans-serif;
   background:#121212;
   color:#fff;
-  display:flex;
-  justify-content:center;
-}
-
-/* CONTENITORE CENTRALE */
-#app {
-  width:100%;
-  max-width:420px;
-  padding:20px;
   text-align:center;
 }
 
@@ -29,6 +20,8 @@ body {
   width:300px;
   height:300px;
   margin:20px auto;
+  margin-left: auto;   /* ✅ MICRO-FIX */
+  margin-right: auto;  /* ✅ MICRO-FIX */
 }
 
 canvas {
@@ -57,6 +50,9 @@ canvas {
   color:#000;
   border:none;
   border-radius:40px;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
 }
 
 #spinBtn:disabled {
@@ -65,20 +61,21 @@ canvas {
 }
 
 #withdrawBtn {
-  margin-top:16px;
-  padding:16px 45px;
-  font-size:18px;
+  display:block;
+  margin:14px auto 0 auto;
+  padding:12px 36px;
+  font-size:16px;
   font-weight:bold;
-  background:#2ecc71;
-  color:#fff;
+  background:#22c55e;
+  color:#ffffff;
   border:none;
   border-radius:40px;
-  display:none;
+  cursor:not-allowed;
+  opacity:1;
 }
 
-#withdrawBtn:disabled {
-  background:#555;
-  color:#aaa;
+#withdrawBtn.enabled {
+  cursor:pointer;
 }
 
 .small {
@@ -87,11 +84,29 @@ canvas {
   margin-top:6px;
 }
 </style>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdXbufEBn45FH-JJpRrWmbSpdY_n-DZf4",
+    authDomain: "spinrewardapp-56e7f.firebaseapp.com",
+    projectId: "spinrewardapp-56e7f",
+    storageBucket: "spinrewardapp-56e7f.firebasestorage.app",
+    messagingSenderId: "373874094522",
+    appId: "1:373874094522:web:4d2b83a58d1cde08c02d83",
+    measurementId: "G-Z604SL4NPK"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+
 </head>
 
 <body>
-
-<div id="app">
 
 <h2>🎯 Spin & Reward</h2>
 
@@ -109,49 +124,25 @@ Equivalent up to 10 USD
 </div>
 
 <button id="spinBtn">SPIN</button>
-<button id="withdrawBtn">WITHDRAW</button>
+<button id="withdrawBtn" disabled>WITHDRAW</button>
 
 <div class="small" id="status"></div>
 <div class="small" id="timer"></div>
-
-</div>
-
-<!-- FIREBASE (IDENTICO) -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCdXbufEBn45FH-JJpRrWmbSpdY_n-DZf4",
-  authDomain: "spinrewardapp-56e7f.firebaseapp.com",
-  projectId: "spinrewardapp-56e7f",
-  storageBucket: "spinrewardapp-56e7f.firebasestorage.app",
-  messagingSenderId: "373874094522",
-  appId: "1:373874094522:web:4d2b83a58d1cde08c02d83",
-  measurementId: "G-Z604SL4NPK"
-};
-
-const app = initializeApp(firebaseConfig);
-getAnalytics(app);
-</script>
 
 <script>
 // ---------------- CONFIG ----------------
 const DAILY_SPINS = 2;
 const COOLDOWN = 24 * 60 * 60 * 1000;
-const WITHDRAW_POINTS = 15000;
-const FORM_LINK = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
 
-// ---------------- SECTORS ----------------
 const sectors = [
   { label: "120 PT", value: 120, color: "#27ae60" },
   { label: "100 PT", value: 100, color: "#2ecc71" },
-  { label: "50 PT", value: 50, color: "#f1c40f" },
-  { label: "25 PT", value: 25, color: "#f39c12" },
-  { label: "15 PT", value: 15, color: "#e67e22" },
-  { label: "15 PT", value: 15, color: "#d35400" },
-  { label: "10 PT", value: 10, color: "#c0392b" },
-  { label: "0 PT", value: 0, color: "#7f8c8d" }
+  { label: "50 PT",  value: 50,  color: "#f1c40f" },
+  { label: "25 PT",  value: 25,  color: "#f39c12" },
+  { label: "15 PT",  value: 15,  color: "#e67e22" },
+  { label: "15 PT",  value: 15,  color: "#d35400" },
+  { label: "10 PT",  value: 10,  color: "#c0392b" },
+  { label: "0 PT",   value: 0,   color: "#7f8c8d" }
 ];
 
 // ---------------- STORAGE ----------------
@@ -185,13 +176,14 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ---------------- DRAW ----------------
+// ---------------- DRAW WHEEL ----------------
 function drawWheel() {
   const r = canvas.width / 2;
   const arc = (2 * Math.PI) / sectors.length;
 
   sectors.forEach((s, i) => {
     const angle = i * arc;
+
     ctx.beginPath();
     ctx.moveTo(r, r);
     ctx.arc(r, r, r, angle, angle + arc);
@@ -210,18 +202,6 @@ function drawWheel() {
 }
 
 drawWheel();
-
-// ---------------- WITHDRAW ----------------
-function checkWithdraw() {
-  if (points >= WITHDRAW_POINTS) {
-    withdrawBtn.style.display = "inline-block";
-    withdrawBtn.disabled = false;
-  }
-}
-
-withdrawBtn.onclick = () => {
-  window.open(FORM_LINK, "_blank");
-};
 
 // ---------------- COOLDOWN ----------------
 function checkCooldown() {
@@ -245,7 +225,24 @@ function checkCooldown() {
   }
 }
 
-// ---------------- SPIN ----------------
+// ---------------- WITHDRAW ----------------
+const WITHDRAW_POINTS = 15000;
+const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
+
+function updateWithdrawButton() {
+  if (points >= WITHDRAW_POINTS) {
+    withdrawBtn.disabled = false;
+    withdrawBtn.classList.add("enabled");
+  }
+}
+
+withdrawBtn.addEventListener("click", () => {
+  if (!withdrawBtn.disabled) {
+    window.open(WITHDRAW_FORM, "_blank");
+  }
+});
+
+// ---------------- SPIN FLOW ----------------
 btn.onclick = () => {
   statusEl.textContent = "Loading ad...";
   btn.disabled = true;
@@ -281,13 +278,13 @@ function startSpin() {
     localStorage.setItem("points", points);
     pointsEl.textContent = points;
     statusEl.textContent = `You earned ${reward} points`;
-    checkWithdraw();
     checkCooldown();
+    updateWithdrawButton();
   }, 4000);
 }
 
 // ---------------- INIT ----------------
-checkWithdraw();
+updateWithdrawButton();
 checkCooldown();
 </script>
 
