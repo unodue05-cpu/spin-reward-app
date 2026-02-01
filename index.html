@@ -31,7 +31,7 @@ canvas {
   position:absolute;
   top:-10px;
   left:50%;
-  transform:translateX(-50%) rotate(180deg); /* SOLO QUESTA MODIFICA */
+  transform:translateX(-50%) rotate(180deg);
   width:0;
   height:0;
   border-left:12px solid transparent;
@@ -48,11 +48,33 @@ canvas {
   color:#000;
   border:none;
   border-radius:40px;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
 }
 
 #spinBtn:disabled {
   background:#555;
   color:#aaa;
+}
+
+/* ✅ WITHDRAW SOTTO SPIN */
+#withdrawBtn {
+  display:block;
+  margin:14px auto 0 auto;
+  padding:12px 36px;
+  font-size:16px;
+  font-weight:bold;
+  background:#22c55e;
+  color:#ffffff;
+  border:none;
+  border-radius:40px;
+  cursor:not-allowed;
+  opacity:1;
+}
+
+#withdrawBtn.enabled {
+  cursor:pointer;
 }
 
 .small {
@@ -61,6 +83,26 @@ canvas {
   margin-top:6px;
 }
 </style>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdXbufEBn45FH-JJpRrWmbSpdY_n-DZf4",
+    authDomain: "spinrewardapp-56e7f.firebaseapp.com",
+    projectId: "spinrewardapp-56e7f",
+    storageBucket: "spinrewardapp-56e7f.firebasestorage.app",
+    messagingSenderId: "373874094522",
+    appId: "1:373874094522:web:4d2b83a58d1cde08c02d83",
+    measurementId: "G-Z604SL4NPK"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+
 </head>
 
 <body>
@@ -81,6 +123,7 @@ Equivalent up to 10 USD
 </div>
 
 <button id="spinBtn">SPIN</button>
+<button id="withdrawBtn" disabled>WITHDRAW</button>
 
 <div class="small" id="status"></div>
 <div class="small" id="timer"></div>
@@ -90,7 +133,6 @@ Equivalent up to 10 USD
 const DAILY_SPINS = 2;
 const COOLDOWN = 24 * 60 * 60 * 1000;
 
-// spicchi
 const sectors = [
   { label: "120 PT", value: 120, color: "#27ae60" },
   { label: "100 PT", value: 100, color: "#2ecc71" },
@@ -107,7 +149,6 @@ let points = Number(localStorage.getItem("points")) || 0;
 let spins = Number(localStorage.getItem("spins")) || 0;
 let cooldownStart = Number(localStorage.getItem("cooldownStart")) || 0;
 
-// anti clock cheat
 let startPerf = performance.now();
 let savedElapsed = Number(localStorage.getItem("elapsed")) || 0;
 
@@ -115,6 +156,7 @@ let savedElapsed = Number(localStorage.getItem("elapsed")) || 0;
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 const btn = document.getElementById("spinBtn");
+const withdrawBtn = document.getElementById("withdrawBtn");
 const pointsEl = document.getElementById("points");
 const statusEl = document.getElementById("status");
 const timerEl = document.getElementById("timer");
@@ -182,18 +224,33 @@ function checkCooldown() {
   }
 }
 
+// ---------------- WITHDRAW ----------------
+const WITHDRAW_POINTS = 15000;
+const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
+
+function updateWithdrawButton() {
+  if (points >= WITHDRAW_POINTS) {
+    withdrawBtn.disabled = false;
+    withdrawBtn.classList.add("enabled");
+  }
+}
+
+withdrawBtn.addEventListener("click", () => {
+  if (!withdrawBtn.disabled) {
+    window.open(WITHDRAW_FORM, "_blank");
+  }
+});
+
 // ---------------- SPIN FLOW ----------------
 btn.onclick = () => {
   statusEl.textContent = "Loading ad...";
   btn.disabled = true;
 
-  // AdMob hook (gli sviluppatori chiamano onAdCompleted)
   if (window.Android && Android.requestRewardAd) {
     Android.requestRewardAd();
   }
 };
 
-// chiamata SOLO se ad completata
 window.onAdCompleted = function () {
   startSpin();
 };
@@ -221,10 +278,12 @@ function startSpin() {
     pointsEl.textContent = points;
     statusEl.textContent = `You earned ${reward} points`;
     checkCooldown();
+    updateWithdrawButton();
   }, 4000);
 }
 
 // ---------------- INIT ----------------
+updateWithdrawButton();
 checkCooldown();
 </script>
 
