@@ -234,7 +234,7 @@ function startSpin() {
   canvas.style.transform = "rotate(0deg)";
 
   setTimeout(() => {
-    const rotation = 720 + (360 - index * arc - arc / 2);
+    const rotation = 720 + (360 - (index + 0.5) * arc);
     canvas.style.transition = "transform 4s cubic-bezier(.17,.67,.12,.99)";
     canvas.style.transform = `rotate(${rotation}deg)`;
   }, 50);
