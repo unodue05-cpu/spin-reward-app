@@ -48,9 +48,6 @@ canvas {
   color:#000;
   border:none;
   border-radius:40px;
-  display:block;
-  margin-left:auto;
-  margin-right:auto;
 }
 
 #spinBtn:disabled {
@@ -58,7 +55,6 @@ canvas {
   color:#aaa;
 }
 
-/* ✅ WITHDRAW SOTTO SPIN */
 #withdrawBtn {
   display:block;
   margin:14px auto 0 auto;
@@ -70,7 +66,6 @@ canvas {
   border:none;
   border-radius:40px;
   cursor:not-allowed;
-  opacity:1;
 }
 
 #withdrawBtn.enabled {
@@ -83,26 +78,6 @@ canvas {
   margin-top:6px;
 }
 </style>
-
-<!-- FIREBASE -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCdXbufEBn45FH-JJpRrWmbSpdY_n-DZf4",
-    authDomain: "spinrewardapp-56e7f.firebaseapp.com",
-    projectId: "spinrewardapp-56e7f",
-    storageBucket: "spinrewardapp-56e7f.firebasestorage.app",
-    messagingSenderId: "373874094522",
-    appId: "1:373874094522:web:4d2b83a58d1cde08c02d83",
-    measurementId: "G-Z604SL4NPK"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
-
 </head>
 
 <body>
@@ -113,8 +88,7 @@ canvas {
 
 <div class="small">
 <strong>15,000 Points – Reward</strong><br>
-The reward is subject to availability and verification.<br>
-Equivalent up to 10 USD
+Gift Card
 </div>
 
 <div id="wheelContainer">
@@ -125,70 +99,61 @@ Equivalent up to 10 USD
 <button id="spinBtn">SPIN</button>
 <button id="withdrawBtn" disabled>WITHDRAW</button>
 
+<div class="small">
+Rewards are promotional and subject to availability.<br>
+No cash value. Not guaranteed.
+</div>
+
 <div class="small" id="status"></div>
-<div class="small" id="timer"></div>
 
 <script>
 // ---------------- CONFIG ----------------
-const DAILY_SPINS = 2;
-const COOLDOWN = 24 * 60 * 60 * 1000;
+const FIXED_POINTS = 10;
+const WITHDRAW_POINTS = 15000;
+const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
 
-const sectors = [
-  { label: "120 PT", value: 120, color: "#27ae60" },
-  { label: "100 PT", value: 100, color: "#2ecc71" },
-  { label: "50 PT",  value: 50,  color: "#f1c40f" },
-  { label: "25 PT",  value: 25,  color: "#f39c12" },
-  { label: "15 PT",  value: 15,  color: "#e67e22" },
-  { label: "15 PT",  value: 15,  color: "#d35400" },
-  { label: "10 PT",  value: 10,  color: "#c0392b" },
-  { label: "0 PT",   value: 0,   color: "#7f8c8d" }
-];
+// spin blocks: 2 + 2 + 1
+const SPIN_BLOCKS = [2,2,1];
+const COOLDOWN = 8 * 60 * 60 * 1000;
 
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
-let spins = Number(localStorage.getItem("spins")) || 0;
-let cooldownStart = Number(localStorage.getItem("cooldownStart")) || 0;
-
-let startPerf = performance.now();
-let savedElapsed = Number(localStorage.getItem("elapsed")) || 0;
+let blockIndex = Number(localStorage.getItem("blockIndex")) || 0;
+let spinsInBlock = Number(localStorage.getItem("spinsInBlock")) || 0;
+let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
 
 // ---------------- UI ----------------
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
-const btn = document.getElementById("spinBtn");
+const spinBtn = document.getElementById("spinBtn");
 const withdrawBtn = document.getElementById("withdrawBtn");
 const pointsEl = document.getElementById("points");
 const statusEl = document.getElementById("status");
-const timerEl = document.getElementById("timer");
 
 pointsEl.textContent = points;
 
-// ---------------- TIME ----------------
-function elapsed() {
-  return savedElapsed + (performance.now() - startPerf);
-}
-
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    savedElapsed = elapsed();
-    localStorage.setItem("elapsed", savedElapsed);
-  }
-});
-
 // ---------------- DRAW WHEEL ----------------
+const sectors = [
+  { label: "120 PT", color: "#27ae60" },
+  { label: "100 PT", color: "#2ecc71" },
+  { label: "50 PT",  color: "#f1c40f" },
+  { label: "25 PT",  color: "#f39c12" },
+  { label: "15 PT",  color: "#e67e22" },
+  { label: "15 PT",  color: "#d35400" },
+  { label: "10 PT",  color: "#c0392b" },
+  { label: "0 PT",   color: "#7f8c8d" }
+];
+
 function drawWheel() {
   const r = canvas.width / 2;
   const arc = (2 * Math.PI) / sectors.length;
-
   sectors.forEach((s, i) => {
     const angle = i * arc;
-
     ctx.beginPath();
     ctx.moveTo(r, r);
     ctx.arc(r, r, r, angle, angle + arc);
     ctx.fillStyle = s.color;
     ctx.fill();
-
     ctx.save();
     ctx.translate(r, r);
     ctx.rotate(angle + arc / 2);
@@ -199,55 +164,45 @@ function drawWheel() {
     ctx.restore();
   });
 }
-
 drawWheel();
 
-// ---------------- COOLDOWN ----------------
-function checkCooldown() {
-  if (spins < DAILY_SPINS) {
-    btn.disabled = false;
-    timerEl.textContent = "";
+// ---------------- COUNTDOWN ----------------
+function updateSpinButton() {
+  const now = Date.now();
+  if (now < cooldownUntil) {
+    const rem = cooldownUntil - now;
+    const h = Math.floor(rem / 3600000);
+    const m = Math.floor((rem % 3600000) / 60000);
+    spinBtn.disabled = true;
+    spinBtn.textContent = `SPIN (${h}h ${m}m)`;
     return;
   }
 
-  const rem = COOLDOWN - (elapsed() - cooldownStart);
-  if (rem <= 0) {
-    spins = 0;
-    localStorage.setItem("spins", 0);
-    btn.disabled = false;
-    timerEl.textContent = "";
-  } else {
-    btn.disabled = true;
-    const h = Math.floor(rem / 3600000);
-    const m = Math.floor((rem % 3600000) / 60000);
-    timerEl.textContent = `Next spin in ${h}h ${m}m`;
-  }
+  spinBtn.disabled = false;
+  const remaining = SPIN_BLOCKS[blockIndex] - spinsInBlock;
+  spinBtn.textContent = `SPIN (${remaining})`;
 }
 
 // ---------------- WITHDRAW ----------------
-const WITHDRAW_POINTS = 15000;
-const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
-
-function updateWithdrawButton() {
+function updateWithdraw() {
   if (points >= WITHDRAW_POINTS) {
     withdrawBtn.disabled = false;
     withdrawBtn.classList.add("enabled");
   }
 }
 
-withdrawBtn.addEventListener("click", () => {
-  if (!withdrawBtn.disabled) {
-    window.open(WITHDRAW_FORM, "_blank");
-  }
-});
+withdrawBtn.onclick = () => {
+  if (!withdrawBtn.disabled) window.open(WITHDRAW_FORM, "_blank");
+};
 
 // ---------------- SPIN FLOW ----------------
-btn.onclick = () => {
+spinBtn.onclick = () => {
+  spinBtn.disabled = true;
   statusEl.textContent = "Loading ad...";
-  btn.disabled = true;
-
   if (window.Android && Android.requestRewardAd) {
     Android.requestRewardAd();
+  } else {
+    onAdCompleted();
   }
 };
 
@@ -256,35 +211,42 @@ window.onAdCompleted = function () {
 };
 
 function startSpin() {
-  spins++;
-  localStorage.setItem("spins", spins);
+  spinsInBlock++;
+  localStorage.setItem("spinsInBlock", spinsInBlock);
 
-  if (spins === DAILY_SPINS) {
-    cooldownStart = elapsed();
-    localStorage.setItem("cooldownStart", cooldownStart);
-  }
-
-  const index = Math.floor(Math.random() * sectors.length);
   const arc = 360 / sectors.length;
+
+  // FORZA la ruota a fermarsi sul settore "10 PT"
+  const index = sectors.findIndex(s => s.label === "10 PT");
   const rotation = 720 + (360 - index * arc - arc / 2);
 
   canvas.style.transition = "transform 4s cubic-bezier(.17,.67,.12,.99)";
   canvas.style.transform = `rotate(${rotation}deg)`;
 
   setTimeout(() => {
-    const reward = sectors[index].value;
-    points += reward;
+    points += FIXED_POINTS; // sempre 10 punti
     localStorage.setItem("points", points);
     pointsEl.textContent = points;
-    statusEl.textContent = `You earned ${reward} points`;
-    checkCooldown();
-    updateWithdrawButton();
+    statusEl.textContent = `You earned ${FIXED_POINTS} points`;
+
+    if (spinsInBlock >= SPIN_BLOCKS[blockIndex]) {
+      spinsInBlock = 0;
+      blockIndex = (blockIndex + 1) % SPIN_BLOCKS.length;
+      cooldownUntil = Date.now() + COOLDOWN;
+      localStorage.setItem("blockIndex", blockIndex);
+      localStorage.setItem("cooldownUntil", cooldownUntil);
+      localStorage.setItem("spinsInBlock", 0);
+    }
+
+    updateSpinButton();
+    updateWithdraw();
   }, 4000);
 }
 
 // ---------------- INIT ----------------
-updateWithdrawButton();
-checkCooldown();
+setInterval(updateSpinButton, 60000);
+updateSpinButton();
+updateWithdraw();
 </script>
 
 </body>
