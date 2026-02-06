@@ -216,12 +216,29 @@ withdrawBtn.onclick = () => {
 // ---------------- SPIN FLOW ----------------
 spinBtn.onclick = () => {
   spinBtn.disabled = true;
-  if (window.Android && Android.requestRewardAd) {
-    Android.requestRewardAd();
+
+  if (window.webToNative && webToNative.admob) {
+    // Mostra Rewarded Ad
+    webToNative.admob.rewardsAd({
+      adId: "ca-app-pub-9251543522779819/1658358029",
+      rewardsAdCallback: (value) => {
+        console.log(value);
+        // Solo dopo la pubblicità, inizia il giro della ruota
+        onAdCompleted();
+      }
+    });
   } else {
+    // fallback se AdMob non disponibile
     onAdCompleted();
   }
 };
+  
+  
+    
+  
+    
+  
+
 
 window.onAdCompleted = function () {
   startSpin();
