@@ -217,21 +217,42 @@ withdrawBtn.onclick = () => {
 spinBtn.onclick = () => {
   spinBtn.disabled = true;
 
-  if (window.webToNative && webToNative.admob) {
-    // Mostra Rewarded Ad
-    webToNative.admob.rewardsAd({
-      adId: "ca-app-pub-9251543522779819/1658358029",
+  console.log("=== Spin cliccato ===");
+  console.log("webToNative:", window.webToNative);
+  console.log("admob:", window.webToNative?.admob);
+
+  if (window.webToNative && window.webToNative.admob) {
+    // Mostra Rewarded Ad usando ID demo Google
+    window.webToNative.admob.rewardsAd({
+      adId: "ca-app-pub-3940256099942544/5224354917", // ID demo
       rewardsAdCallback: (value) => {
-        console.log(value);
+        console.log("Ad completata:", value);
         // Solo dopo la pubblicità, inizia il giro della ruota
         onAdCompleted();
       }
     });
   } else {
-    // fallback se AdMob non disponibile
+    console.log("AdMob non disponibile, giro ruota subito");
     onAdCompleted();
   }
 };
+  
+
+  
+    
+    
+      
+      
+        
+        
+        
+      
+    
+  
+    
+    
+  
+
   
   
     
