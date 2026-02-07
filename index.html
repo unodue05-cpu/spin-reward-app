@@ -224,15 +224,30 @@ spinBtn.onclick = () => {
   console.log("webToNative:", window.webToNative);
   console.log("admob:", window.webToNative?.admob);
 
-  if (window.webToNative && window.webToNative.admob) {
+  if (window.webToNative?.admob?.rewardsAd) {
     // Mostra Rewarded Ad usando ID demo Google
     window.webToNative.admob.rewardsAd({
       adId: "ca-app-pub-3940256099942544/5224354917", // ID demo
       rewardsAdCallback: (value) => {
-        console.log("Ad completata:", value);
-        // Solo dopo la pubblicità, inizia il giro della ruota
-        onAdCompleted();
+  console.log("Ad callback:", value);
+
+  try {
+    const data = typeof value === "string" ? JSON.parse(value) : value;
+
+    // gira la ruota SOLO se l'utente ha chiuso o completato l'ad
+    if (
+      data.status === "adDismissed" ||
+      data.status === "rewardSuccess" ||
+      data.status === "success"
+    ) {
+      onAdCompleted();
+    }
+  } catch (e) {
+    console.log("Errore parsing callback, giro comunque");
+    onAdCompleted();
+  }
       }
+      
     });
   } else {
     console.log("AdMob non disponibile, giro ruota subito");
