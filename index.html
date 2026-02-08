@@ -126,6 +126,21 @@ No cash value. Not guaranteed.
 </div>
 
 <script>
+
+// ---------------- REWARD AD ALL'APERTURA ----------------
+window.onload = () => {
+  if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
+    WTN.AdMob.rewardsAd({
+      adId: "ca-app-pub-9251543522779819/1658358029",  // metti qui il tuo ID reale della reward ad
+      rewardsAdCallback: (value) => {
+        console.log("Reward completata all'apertura:", value);
+      }
+    });
+  } else {
+    console.log("Reward Ad non disponibile");
+  }
+};
+
 // ---------------- CONFIG ----------------
 const SPIN_BLOCKS = [2, 2, 1];
 const COOLDOWN = 8 * 60 * 60 * 1000;
@@ -213,32 +228,20 @@ withdrawBtn.onclick = () => {
   }
 };
 
-// ---------------- SPIN FLOW (MODIFICATO) ----------------
+// ---------------- SPIN FLOW ----------------
 spinBtn.onclick = () => {
-  const now = Date.now();
-  if (now < cooldownUntil) return; // blocca click se in cooldown
-
   spinBtn.disabled = true;
-
   if (window.Android && Android.requestRewardAd) {
     Android.requestRewardAd();
   } else {
     onAdCompleted();
   }
-
-  // Imposta cooldown di 4 ore dal click
-  cooldownUntil = Date.now() + 4 * 60 * 60 * 1000; 
-  localStorage.setItem("cooldownUntil", cooldownUntil);
-
-  // Aggiorna subito il pulsante con countdown
-  updateSpinButton();
 };
 
 window.onAdCompleted = function () {
   startSpin();
 };
 
-// ---------------- START SPIN ----------------
 function startSpin() {
   const index = sectors.findIndex(s => s.label === "10 PT");
   const arc = 360 / sectors.length;
@@ -274,7 +277,6 @@ function startSpin() {
   }, 4000);
 }
 
-// ---------------- INIT ----------------
 updateWithdraw();
 updateSpinButton();
 </script>
