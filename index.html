@@ -231,12 +231,13 @@ spinBtn.onclick = () => {
   spinBtn.disabled = true;
   console.log("SPIN cliccato");
 
-  if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
-    WTN.AdMob.rewardsAd({
-      adId: "ca-app-pub-9251543522779819/1658358029", // IL TUO ID REALE
-      rewardsAdCallback: (value) => {
-        console.log("Reward callback:", value);
-        startSpin(); // gira DOPO l’ad
+  if (window.WTN && WTN.AdMob && WTN.AdMob.fullScreenAd) {
+    WTN.AdMob.fullScreenAd({
+      adId: "ca-app-pub-9251543522779819/8093548059", // METTI IL TUO ID INTERSTITIAL REALE
+      fullScreenAdCallback: (value) => {
+        console.log("Interstitial callback:", value);
+        // Ruota parte subito dopo che l'annuncio si chiude
+        startSpin();
       }
     });
   } else {
@@ -244,7 +245,6 @@ spinBtn.onclick = () => {
     startSpin(); // fallback
   }
 };
-  
 
   
     
