@@ -126,7 +126,6 @@ No cash value. Not guaranteed.
 </div>
 
 <script>
-
 // ---------------- CONFIG ----------------
 const SPIN_BLOCKS = [2, 2, 1];
 const COOLDOWN = 8 * 60 * 60 * 1000;
@@ -159,17 +158,6 @@ const withdrawBtn = document.getElementById("withdrawBtn");
 const pointsEl = document.getElementById("points");
 
 pointsEl.textContent = points;
-
-// ---------------- BANNER ----------------
-if (window.WTN && WTN.AdMob && WTN.AdMob.bannerAd) {
-    WTN.AdMob.bannerAd({
-        adId: "ca-app-pub-9251543522779819/9330839613", // metti qui il tuo vero ID del banner
-        position: "bottom", // può essere "top" o "bottom"
-        autoShow: true
-    });
-} else {
-    console.log("Banner Ad non disponibile");
-}
 
 // ---------------- DRAW WHEEL ----------------
 function drawWheel() {
@@ -225,52 +213,32 @@ withdrawBtn.onclick = () => {
   }
 };
 
-
-// ---------------- SPIN FLOW ----------------
+// ---------------- SPIN FLOW (MODIFICATO) ----------------
 spinBtn.onclick = () => {
-  spinBtn.disabled = true;
-  console.log("SPIN cliccato");
+  const now = Date.now();
+  if (now < cooldownUntil) return; // blocca click se in cooldown
 
-  if (window.WTN && WTN.AdMob && WTN.AdMob.fullScreenAd) {
-    WTN.AdMob.fullScreenAd({
-      adId: "ca-app-pub-9251543522779819/8093548059", // METTI IL TUO ID INTERSTITIAL REALE
-      fullScreenAdCallback: (value) => {
-        console.log("Interstitial callback:", value);
-        // Ruota parte subito dopo che l'annuncio si chiude
-        startSpin();
-      }
-    });
+  spinBtn.disabled = true;
+
+  if (window.Android && Android.requestRewardAd) {
+    Android.requestRewardAd();
   } else {
-    console.log("WTN AdMob non disponibile");
-    startSpin(); // fallback
+    onAdCompleted();
   }
+
+  // Imposta cooldown di 4 ore dal click
+  cooldownUntil = Date.now() + 4 * 60 * 60 * 1000; 
+  localStorage.setItem("cooldownUntil", cooldownUntil);
+
+  // Aggiorna subito il pulsante con countdown
+  updateSpinButton();
 };
 
-  
-    
-    
-      
-      
-        
-        
-        
-      
-    
-  
-    
-    
-  
+window.onAdCompleted = function () {
+  startSpin();
+};
 
-  
-  
-    
-  
-    
-  
-
-
-
-
+// ---------------- START SPIN ----------------
 function startSpin() {
   const index = sectors.findIndex(s => s.label === "10 PT");
   const arc = 360 / sectors.length;
@@ -306,6 +274,7 @@ function startSpin() {
   }, 4000);
 }
 
+// ---------------- INIT ----------------
 updateWithdraw();
 updateSpinButton();
 </script>
