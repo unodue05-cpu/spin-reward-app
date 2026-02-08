@@ -160,6 +160,17 @@ const pointsEl = document.getElementById("points");
 
 pointsEl.textContent = points;
 
+// ---------------- BANNER ----------------
+if (window.WTN && WTN.AdMob && WTN.AdMob.bannerAd) {
+    WTN.AdMob.bannerAd({
+        adId: "ca-app-pub-9251543522779819/9330839613", // metti qui il tuo vero ID del banner
+        position: "bottom", // può essere "top" o "bottom"
+        autoShow: true
+    });
+} else {
+    console.log("Banner Ad non disponibile");
+}
+
 // ---------------- DRAW WHEEL ----------------
 function drawWheel() {
   const r = canvas.width / 2;
