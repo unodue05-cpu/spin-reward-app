@@ -218,20 +218,23 @@ withdrawBtn.onclick = () => {
 };
 
 // ---------------- SPIN FLOW ----------------
+// ---------------- SPIN FLOW ----------------
 spinBtn.onclick = () => {
   spinBtn.disabled = true;
-  console.log("=== Spin cliccato ===");
+  console.log("SPIN cliccato");
 
-  
-
-if (window.webToNative && window.webToNative.admob) {
-  window.webToNative.admob.showRewardedAd();
-}
-
-
-setTimeout(() => {
-  startSpin();
-}, 1200); 
+  if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
+    WTN.AdMob.rewardsAd({
+      adId: "ca-app-pub-9251543522779819/1658358029", // IL TUO ID REALE
+      rewardsAdCallback: (value) => {
+        console.log("Reward callback:", value);
+        startSpin(); // gira DOPO l’ad
+      }
+    });
+  } else {
+    console.log("WTN AdMob non disponibile");
+    startSpin(); // fallback
+  }
 };
   
 
