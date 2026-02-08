@@ -126,24 +126,8 @@ No cash value. Not guaranteed.
 </div>
 
 <script>
-
-// ---------------- REWARD AD ALL'APERTURA ----------------
-window.onload = () => {
-  if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
-    WTN.AdMob.rewardsAd({
-      adId: "ca-app-pub-9251543522779819/1658358029",  // metti qui il tuo ID reale della reward ad
-      rewardsAdCallback: (value) => {
-        console.log("Reward completata all'apertura:", value);
-      }
-    });
-  } else {
-    console.log("Reward Ad non disponibile");
-  }
-};
-
 // ---------------- CONFIG ----------------
-const SPIN_BLOCKS = [2, 2, 1];
-const COOLDOWN = 8 * 60 * 60 * 1000;
+const COOLDOWN = 4 * 60 * 60 * 1000; // 4 ore
 const FIXED_REWARD = 10;
 const WITHDRAW_POINTS = 15000;
 const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
@@ -161,8 +145,6 @@ const sectors = [
 
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
-let blockIndex = Number(localStorage.getItem("blockIndex")) || 0;
-let spinsInBlock = Number(localStorage.getItem("spinsInBlock")) || 0;
 let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
 
 // ---------------- UI ----------------
@@ -221,24 +203,47 @@ function updateWithdraw() {
     withdrawBtn.classList.add("enabled");
   }
 }
-
 withdrawBtn.onclick = () => {
   if (!withdrawBtn.disabled) {
     window.open(WITHDRAW_FORM, "_blank");
   }
 };
 
+// ---------------- BANNER ----------------
+function showBanner() {
+  if (window.WTN && WTN.AdMob && WTN.AdMob.bannerAd) {
+    WTN.AdMob.bannerAd({
+      adId: "ca-app-pub-9251543522779819/9330839613", // IL TUO ID BANNER QUI
+      position: "bottom",
+      autoShow: true
+    });
+  } else {
+    setTimeout(showBanner, 500);
+  }
+}
+window.addEventListener("load", showBanner);
+
+// ---------------- REWARD AD ALL'AVVIO ----------------
+function showRewardAd() {
+  if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
+    WTN.AdMob.rewardsAd({
+      adId: "ca-app-pub-9251543522779819/1658358029", // IL TUO ID REWARD AD QUI
+      rewardsAdCallback: onAdCompleted
+    });
+  } else {
+    setTimeout(showRewardAd, 500);
+  }
+}
+window.addEventListener("load", showRewardAd);
+
 // ---------------- SPIN FLOW ----------------
 spinBtn.onclick = () => {
   spinBtn.disabled = true;
-  if (window.Android && Android.requestRewardAd) {
-    Android.requestRewardAd();
-  } else {
-    onAdCompleted();
-  }
+  startSpin();
 };
 
 window.onAdCompleted = function () {
+  // qui se vuoi gestire ricompense extra, ma al momento solo gira ruota
   startSpin();
 };
 
@@ -257,19 +262,10 @@ function startSpin() {
 
   setTimeout(() => {
     points += FIXED_REWARD;
-    spinsInBlock++;
-
     localStorage.setItem("points", points);
-    localStorage.setItem("spinsInBlock", spinsInBlock);
 
-    if (spinsInBlock >= SPIN_BLOCKS[blockIndex]) {
-      spinsInBlock = 0;
-      blockIndex = (blockIndex + 1) % SPIN_BLOCKS.length;
-      cooldownUntil = Date.now() + COOLDOWN;
-
-      localStorage.setItem("blockIndex", blockIndex);
-      localStorage.setItem("cooldownUntil", cooldownUntil);
-    }
+    cooldownUntil = Date.now() + COOLDOWN;
+    localStorage.setItem("cooldownUntil", cooldownUntil);
 
     pointsEl.textContent = points;
     updateWithdraw();
