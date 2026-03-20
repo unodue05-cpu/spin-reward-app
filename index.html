@@ -146,7 +146,13 @@ const sectors = [
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
 let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
-
+let isFirstLaunch = !localStorage.getItem("hasLaunched");
+if (isFirstLaunch) {
+  cooldownUntil = Date.now() + 30000; // 30 secondi
+  localStorage.setItem("hasLaunched", "true");
+} else {
+  cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
+}  
 // ---------------- UI ----------------
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
@@ -184,18 +190,27 @@ drawWheel();
 // ---------------- COUNTDOWN ----------------
 function updateSpinButton() {
   const now = Date.now();
+
   if (now < cooldownUntil) {
     const diff = cooldownUntil - now;
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
+
+    if (diff <= 60000) {
+      // sotto 1 minuto → mostra secondi
+      const seconds = Math.ceil(diff / 1000);
+      spinBtn.textContent = `Wait ${seconds}s`;
+    } else {
+      // sopra 1 minuto → mostra ore/minuti
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      spinBtn.textContent = `Next spin in ${h}h ${m}m`;
+    }
+
     spinBtn.disabled = true;
-    spinBtn.textContent = `Next spin in ${h}h ${m}m`;
   } else {
     spinBtn.disabled = false;
     spinBtn.textContent = "SPIN";
   }
 }
-
 // ---------------- WITHDRAW ----------------
 function updateWithdraw() {
   if (points >= WITHDRAW_POINTS) {
@@ -275,6 +290,7 @@ function startSpin() {
 
 updateWithdraw();
 updateSpinButton();
+setInterval(updateSpinButton, 1000);
 </script>
 
 </body>
