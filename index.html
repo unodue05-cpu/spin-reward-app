@@ -249,6 +249,20 @@ function showRewardAd() {
     setTimeout(showRewardAd, 500);
   }
 }
+  // ---------------- INTERSTITIAL ----------------
+function showInterstitialAd() {
+  if (window.WTN && WTN.AdMob && WTN.AdMob.interstitialAd) {
+    WTN.AdMob.interstitialAd({
+      adId: "ca-app-pub-9251543522779819/1397635977", // inserisci qui il tuo ID interstitial
+      autoShow: true,
+      onAdClosed: function() {
+        console.log("Interstitial chiuso");
+      }
+    });
+  } else {
+    setTimeout(showInterstitialAd, 500);
+  }
+}
 window.addEventListener("load", showRewardAd);
 
 // ---------------- SPIN FLOW ----------------
@@ -285,6 +299,8 @@ function startSpin() {
     pointsEl.textContent = points;
     updateWithdraw();
     updateSpinButton();
+    // Mostra interstitial dopo lo spin
+  showInterstitialAd();
   }, 4000);
 }
 
