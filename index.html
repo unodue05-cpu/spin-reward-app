@@ -83,7 +83,7 @@ canvas {
 <!-- FIREBASE (INVARIATO) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+  import { getAnalytics,logEvent } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCdXbufEBn45FH-JJpRrWmbSpdY_n-DZf4",
@@ -97,6 +97,8 @@ canvas {
 
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
+  window.logEvent = logEvent;
+  window.analytics = analytics;
 </script>
 
 </head>
@@ -127,7 +129,9 @@ No cash value. Not guaranteed.
 
 <script>
 // ---------------- CONFIG ----------------
-const COOLDOWN = 4 * 60 * 60 * 1000; // 4 ore
+const COOLDOWN = 30 * 1000; // 30 secondi all'inizio
+const SPIN_LIMIT = 100;      // numero massimo spin
+const BLOCK_AFTER_LIMIT = 12 * 60 * 60 * 1000; // 12 ore dopo 100 spin
 const FIXED_REWARD = 10;
 const WITHDRAW_POINTS = 15000;
 const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
@@ -146,6 +150,7 @@ const sectors = [
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
 let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
+let spinCount = Number(localStorage.getItem("spinCount")) || 0;
 let isFirstLaunch = !localStorage.getItem("hasLaunched");
 if (isFirstLaunch) {
   cooldownUntil = Date.now() + 30000; // 30 secondi
@@ -219,6 +224,7 @@ function updateWithdraw() {
   }
 }
 withdrawBtn.onclick = () => {
+  logEvent(analytics, 'withdraw_click'); // 🔥 AGGIUNTO
   if (!withdrawBtn.disabled) {
     window.open(WITHDRAW_FORM, "_blank");
   }
@@ -240,6 +246,7 @@ window.addEventListener("load", showBanner);
 
 // ---------------- REWARD AD ALL'AVVIO ----------------
 function showRewardAd() {
+  logEvent(analytics, 'reward_shown'); // 🔥 AGGIUNTO
   if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
     WTN.AdMob.rewardsAd({
       adId: "ca-app-pub-9251543522779819/1658358029", // IL TUO ID REWARD AD QUI
@@ -251,6 +258,7 @@ function showRewardAd() {
 }
   // ---------------- INTERSTITIAL ----------------
 function showInterstitialAd() {
+  logEvent(analytics, 'interstitial_shown'); // 🔥 AGGIUNTO
   if (window.WTN && WTN.AdMob && WTN.AdMob.interstitialAd) {
     WTN.AdMob.interstitialAd({
       adId: "ca-app-pub-9251543522779819/1397635977", // inserisci qui il tuo ID interstitial
@@ -275,6 +283,7 @@ window.addEventListener("load", showRewardAd);
 
 // ---------------- SPIN FLOW ----------------
 spinBtn.onclick = () => {
+  logEvent(analytics, 'spin_click'); // 🔥 AGGIUNTO
   spinBtn.disabled = true;
   startSpin();
 };
@@ -298,17 +307,32 @@ function startSpin() {
   }, 50);
 
   setTimeout(() => {
-    points += FIXED_REWARD;
-    localStorage.setItem("points", points);
+  logEvent(analytics, 'spin_complete'); // 🔥 AGGIUNTO
+  points += FIXED_REWARD;
+localStorage.setItem("points", points);
 
-    cooldownUntil = Date.now() + COOLDOWN;
+// Aggiorna contatore spin
+spinCount++;
+localStorage.setItem("spinCount", spinCount);
+
+// Se raggiunti 100 spin → blocco 12 ore
+if (spinCount >= SPIN_LIMIT) {
+    cooldownUntil = Date.now() + BLOCK_AFTER_LIMIT;
     localStorage.setItem("cooldownUntil", cooldownUntil);
+    spinCount = 0; // reset contatore per il prossimo ciclo
+    localStorage.setItem("spinCount", spinCount);
+} else {
+    cooldownUntil = Date.now() + COOLDOWN; // 30 secondi tra spin
+    localStorage.setItem("cooldownUntil", cooldownUntil);
+}
 
-    pointsEl.textContent = points;
-    updateWithdraw();
-    updateSpinButton();
-    // Mostra interstitial dopo lo spin
-  showInterstitialAd();
+pointsEl.textContent = points;
+updateWithdraw();
+updateSpinButton();
+
+// Mostra interstitial dopo lo spin
+showInterstitialAd();
+  
   }, 4000);
 }
 
