@@ -264,14 +264,13 @@ function showInterstitialAd() {
   }
 }
   // ---------------- INTERSTITIAL TIMER AFFIDABILE ----------------
-setInterval(() => {
-  // controlla che l'SDK sia pronto e nessun ad sia in corso
-  if (window.WTN && WTN.AdMob && !window.WTN.AdMob.isAdShowing) {
-    showInterstitialAd();
-  }
-}, 60000); // ogni 60 secondi
-  // ---------------- INTERSTITIAL TIMER ----------------
-setInterval(showInterstitialAd, 60000); // 60 secondi
+window.addEventListener("load", () => {
+  setInterval(() => {
+    if (window.WTN && WTN.AdMob && !WTN.AdMob.isAdShowing) {
+      showInterstitialAd();
+    }
+  }, 60000);
+});
 window.addEventListener("load", showRewardAd);
 
 // ---------------- SPIN FLOW ----------------
