@@ -345,13 +345,24 @@ async function startSpin() {
       const serverTime = await getServerTime();
 
       if (spinCount >= SPIN_LIMIT) {
-          cooldownUntil = serverTime + BLOCK_AFTER_LIMIT; // blocco 12 ore
-          localStorage.setItem("cooldownUntil", cooldownUntil);
-          spinCount = 0; // reset contatore per il prossimo ciclo
-          localStorage.setItem("spinCount", spinCount);
-      } else {
-          cooldownUntil = serverTime + COOLDOWN; // 30 secondi tra spin
-          localStorage.setItem("cooldownUntil", cooldownUntil);
+    cooldownUntil = serverTime + BLOCK_AFTER_LIMIT; // blocco 12 ore
+    localStorage.setItem("cooldownUntil", cooldownUntil);
+    spinCount = 0; // reset contatore per il prossimo ciclo
+    localStorage.setItem("spinCount", spinCount);
+
+    // 🟢 PROGRAMMA NOTIFICA DOPO 12 ORE
+    if (window.WTN && WTN.Notifications) {
+        WTN.Notifications.schedule({
+            id: "spinReady",  // ID univoco
+            title: "Spin Ready!",
+            text: "Le 12 ore sono passate. Torna a girare la ruota!",
+            at: cooldownUntil,  // momento in cui si riattiva il pulsante
+            sound: "default"    // oppure il nome di un suono personalizzato incluso nell'app
+        });
+    }
+} else {
+    cooldownUntil = serverTime + COOLDOWN; // 30 secondi tra spin
+    localStorage.setItem("cooldownUntil", cooldownUntil);
       }
 
       pointsEl.textContent = points;
