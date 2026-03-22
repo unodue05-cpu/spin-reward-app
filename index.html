@@ -164,11 +164,16 @@ let isFirstLaunch = !localStorage.getItem("hasLaunched");
 async function initializeCooldown() {
   const serverTime = await getServerTime();
 
-  // All'avvio dell'app, sempre 30 secondi di countdown sul pulsante
-const serverTime = await getServerTime();
-cooldownUntil = serverTime + COOLDOWN; // 30 secondi dal momento dell'apertura
-startSpinCountdown(); // ✅ parte il countdown ogni apertura
+  // All'apertura dell'app, SPIN disattivato 30s
+  cooldownUntil = serverTime + COOLDOWN; // 30 secondi dal momento dell'apertura
+  startSpinCountdown(); // ✅ parte il countdown sul pulsante
 
+  // Leggi punti e spinCount salvati
+  points = Number(localStorage.getItem("points")) || 0;
+  spinCount = Number(localStorage.getItem("spinCount")) || 0;
+
+  // Aggiorna UI
+  pointsEl.textContent = points;
   updateWithdraw();
 }
   function startSpinCountdown() {
