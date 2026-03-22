@@ -127,7 +127,6 @@ No cash value. Not guaranteed.
 
 <script>
 // ---------------- CONFIG ----------------
-const COOLDOWN = 4 * 60 * 60 * 1000; // 4 ore
 const FIXED_REWARD = 10;
 const WITHDRAW_POINTS = 15000;
 const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
@@ -146,6 +145,10 @@ const sectors = [
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
 let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
+
+// Nuove variabili per sequenza spin
+let spinCount = Number(localStorage.getItem("spinCount")) || 0;
+let spinSequenceActive = true; // sequenza 100 spin attiva
 
 // ---------------- UI ----------------
 const canvas = document.getElementById("wheel");
@@ -181,24 +184,35 @@ function drawWheel() {
 }
 drawWheel();
 
-// ---------------- COUNTDOWN ----------------
+// ---------------- SPIN BUTTON ----------------
 function updateSpinButton() {
-  // Disattiva subito il pulsante
-  spinBtn.disabled = true;
+  const now = Date.now();
 
-  let countdown = 30; // 30 secondi
-  spinBtn.textContent = `Wait ${countdown}s`;
+  // Se siamo in cooldown 12 ore
+  if (!spinSequenceActive && now < cooldownUntil) {
+    let diff = cooldownUntil - now;
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    spinBtn.disabled = true;
+    spinBtn.textContent = `Next spin in ${h}h ${m}m`;
+    setTimeout(updateSpinButton, 60000); // aggiorna ogni minuto
+  } else if (spinSequenceActive) {
+    // Countdown iniziale di 30 secondi all'apertura
+    spinBtn.disabled = true;
+    let countdown = 30;
+    spinBtn.textContent = `Wait ${countdown}s`;
 
-  const interval = setInterval(() => {
-    countdown--;
-    if (countdown > 0) {
-      spinBtn.textContent = `Wait ${countdown}s`;
-    } else {
-      clearInterval(interval);
-      spinBtn.disabled = false;
-      spinBtn.textContent = "SPIN";
-    }
-  }, 1000);
+    const interval = setInterval(() => {
+      countdown--;
+      if (countdown > 0) {
+        spinBtn.textContent = `Wait ${countdown}s`;
+      } else {
+        clearInterval(interval);
+        spinBtn.disabled = false;
+        spinBtn.textContent = "SPIN";
+      }
+    }, 1000);
+  }
 }
 
 // ---------------- WITHDRAW ----------------
@@ -218,7 +232,7 @@ withdrawBtn.onclick = () => {
 function showBanner() {
   if (window.WTN && WTN.AdMob && WTN.AdMob.bannerAd) {
     WTN.AdMob.bannerAd({
-      adId: "ca-app-pub-9251543522779819/9330839613", // IL TUO ID BANNER QUI
+      adId: "ca-app-pub-9251543522779819/9330839613",
       position: "bottom",
       autoShow: true
     });
@@ -228,11 +242,11 @@ function showBanner() {
 }
 window.addEventListener("load", showBanner);
 
-// ---------------- REWARD AD ALL'AVVIO ----------------
+// ---------------- REWARD AD ----------------
 function showRewardAd() {
   if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
     WTN.AdMob.rewardsAd({
-      adId: "ca-app-pub-9251543522779819/1658358029", // IL TUO ID REWARD AD QUI
+      adId: "ca-app-pub-9251543522779819/1658358029",
       rewardsAdCallback: onAdCompleted
     });
   } else {
@@ -241,14 +255,13 @@ function showRewardAd() {
 }
 window.addEventListener("load", showRewardAd);
 
-// ---------------- SPIN FLOW ----------------
-spinBtn.onclick = () => {
-  spinBtn.disabled = true;
+window.onAdCompleted = function () {
   startSpin();
 };
 
-window.onAdCompleted = function () {
-  // qui se vuoi gestire ricompense extra, ma al momento solo gira ruota
+// ---------------- SPIN FLOW ----------------
+spinBtn.onclick = () => {
+  spinBtn.disabled = true;
   startSpin();
 };
 
@@ -266,20 +279,21 @@ function startSpin() {
   }, 50);
 
   setTimeout(() => {
-    // Aggiungi i punti
+    // Aggiungi punti
     points += FIXED_REWARD;
     localStorage.setItem("points", points);
     pointsEl.textContent = points;
 
-    // Aggiorna contatore spin
+    // Aggiorna spinCount
     spinCount++;
     localStorage.setItem("spinCount", spinCount);
 
+    updateWithdraw();
+
     if (spinCount < 100) {
-      // Dopo ogni spin, countdown 10 secondi prima del prossimo click
+      // Countdown 10 secondi tra spin
       spinBtn.disabled = true;
       let countdown = 10;
-      spinBtn.textContent = `Wait ${countdown}s`;
       const interval = setInterval(() => {
         countdown--;
         if (countdown > 0) {
@@ -291,23 +305,23 @@ function startSpin() {
         }
       }, 1000);
     } else {
-      // Dopo 100 spin, countdown 12 ore
+      // Dopo 100 spin: countdown 12 ore
       spinBtn.disabled = true;
-      cooldownUntil = Date.now() + 12 * 60 * 60 * 1000; // 12 ore
+      spinSequenceActive = false;
+      cooldownUntil = Date.now() + 12 * 60 * 60 * 1000;
       localStorage.setItem("cooldownUntil", cooldownUntil);
       spinBtn.textContent = "Next spin in 12h 0m";
-      spinCount = 0; // reset per la sequenza successiva
+      spinCount = 0;
       localStorage.setItem("spinCount", spinCount);
     }
 
-    // Aggiorna withdraw
-    updateWithdraw();
   }, 4000);
 }
 
+// ---------------- AVVIO ----------------
 updateWithdraw();
 updateSpinButton();
-</script>
 
+</script>
 </body>
 </html>
