@@ -183,17 +183,22 @@ drawWheel();
 
 // ---------------- COUNTDOWN ----------------
 function updateSpinButton() {
-  const now = Date.now();
-  if (now < cooldownUntil) {
-    const diff = cooldownUntil - now;
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    spinBtn.disabled = true;
-    spinBtn.textContent = `Next spin in ${h}h ${m}m`;
-  } else {
-    spinBtn.disabled = false;
-    spinBtn.textContent = "SPIN";
-  }
+  // Disattiva subito il pulsante
+  spinBtn.disabled = true;
+
+  let countdown = 30; // 30 secondi
+  spinBtn.textContent = `Wait ${countdown}s`;
+
+  const interval = setInterval(() => {
+    countdown--;
+    if (countdown > 0) {
+      spinBtn.textContent = `Wait ${countdown}s`;
+    } else {
+      clearInterval(interval);
+      spinBtn.disabled = false;
+      spinBtn.textContent = "SPIN";
+    }
+  }, 1000);
 }
 
 // ---------------- WITHDRAW ----------------
