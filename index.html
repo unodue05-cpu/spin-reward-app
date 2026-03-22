@@ -266,15 +266,42 @@ function startSpin() {
   }, 50);
 
   setTimeout(() => {
+    // Aggiungi i punti
     points += FIXED_REWARD;
     localStorage.setItem("points", points);
-
-    cooldownUntil = Date.now() + COOLDOWN;
-    localStorage.setItem("cooldownUntil", cooldownUntil);
-
     pointsEl.textContent = points;
+
+    // Aggiorna contatore spin
+    spinCount++;
+    localStorage.setItem("spinCount", spinCount);
+
+    if (spinCount < 100) {
+      // Dopo ogni spin, countdown 10 secondi prima del prossimo click
+      spinBtn.disabled = true;
+      let countdown = 10;
+      spinBtn.textContent = `Wait ${countdown}s`;
+      const interval = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          spinBtn.textContent = `Wait ${countdown}s`;
+        } else {
+          clearInterval(interval);
+          spinBtn.disabled = false;
+          spinBtn.textContent = "SPIN";
+        }
+      }, 1000);
+    } else {
+      // Dopo 100 spin, countdown 12 ore
+      spinBtn.disabled = true;
+      cooldownUntil = Date.now() + 12 * 60 * 60 * 1000; // 12 ore
+      localStorage.setItem("cooldownUntil", cooldownUntil);
+      spinBtn.textContent = "Next spin in 12h 0m";
+      spinCount = 0; // reset per la sequenza successiva
+      localStorage.setItem("spinCount", spinCount);
+    }
+
+    // Aggiorna withdraw
     updateWithdraw();
-    updateSpinButton();
   }, 4000);
 }
 
