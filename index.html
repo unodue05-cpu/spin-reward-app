@@ -163,23 +163,29 @@ let isFirstLaunch = !localStorage.getItem("hasLaunched");
 
 async function initializeCooldown() {
   const serverTime = await getServerTime();
-  
-  // Se è la prima volta che l'utente apre l'app
-  if (!localStorage.getItem("hasLaunched")) {
-    cooldownUntil = serverTime + COOLDOWN; // 30 secondi
-    localStorage.setItem("hasLaunched", "true");
-    localStorage.setItem("cooldownUntil", cooldownUntil);
-    localStorage.setItem("spinCount", "0");
-  } else {
-    // Legge il cooldown salvato o usa serverTime come fallback
-    cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || serverTime;
-    spinCount = Number(localStorage.getItem("spinCount")) || 0;
-  }
 
-  // Aggiorna UI subito dopo
-  updateSpinButton();
+  // All'avvio dell'app, sempre 30 secondi di countdown sul pulsante
+const serverTime = await getServerTime();
+cooldownUntil = serverTime + COOLDOWN; // 30 secondi dal momento dell'apertura
+startSpinCountdown(); // ✅ parte il countdown ogni apertura
+
   updateWithdraw();
 }
+  function startSpinCountdown() {
+  const interval = setInterval(async () => {
+    const serverTime = await getServerTime();
+    if (serverTime >= cooldownUntil) {
+      spinBtn.disabled = false;
+      spinBtn.textContent = "SPIN";
+      clearInterval(interval);
+    } else {
+      const diff = cooldownUntil - serverTime;
+      const seconds = Math.ceil(diff / 1000);
+      spinBtn.textContent = `Wait ${seconds}s`;
+      spinBtn.disabled = true;
+    }
+  }, 1000);
+  }
 
 // Avvio iniziale
 initializeCooldown();
