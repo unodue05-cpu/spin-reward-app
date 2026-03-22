@@ -83,8 +83,8 @@ canvas {
 <!-- FIREBASE (INVARIATO) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-  import { getAnalytics,logEvent } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
-  import { getDatabase, ref, set, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyCdXbufEBn45FH-JJpRrWmbSpdY_n-DZf4",
     authDomain: "spinrewardapp-56e7f.firebaseapp.com",
@@ -97,16 +97,6 @@ canvas {
 
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
-  const db = getDatabase(app);
-  // ---------------- TEMPO SERVER ----------------
-async function getServerTime() {
-  const tempRef = ref(db, 'tempTime');       // percorso temporaneo in Firebase
-  await set(tempRef, serverTimestamp());     // scrive il timestamp server
-  const snapshot = await get(tempRef);       // legge il timestamp server
-  return snapshot.val();                     // ritorna il tempo in millisecondi
-}
-  window.logEvent = logEvent;
-  window.analytics = analytics;
 </script>
 
 </head>
@@ -119,7 +109,7 @@ async function getServerTime() {
 
 <div class="small">
 <strong>15,000 Points – Reward</strong><br>
-<strong>Gift Card - PayPal</strong>
+<strong>Gift Card</strong>
 </div>
 
 <div id="wheelContainer">
@@ -137,9 +127,7 @@ No cash value. Not guaranteed.
 
 <script>
 // ---------------- CONFIG ----------------
-const COOLDOWN = 30 * 1000; // 30 secondi all'inizio
-const SPIN_LIMIT = 100;      // numero massimo spin
-const BLOCK_AFTER_LIMIT = 12 * 60 * 60 * 1000; // 12 ore dopo 100 spin
+const COOLDOWN = 4 * 60 * 60 * 1000; // 4 ore
 const FIXED_REWARD = 10;
 const WITHDRAW_POINTS = 15000;
 const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
@@ -157,44 +145,8 @@ const sectors = [
 
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
-let spinCount = Number(localStorage.getItem("spinCount")) || 0;  
 let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
-let isFirstLaunch = !localStorage.getItem("hasLaunched");
 
-async function initializeCooldown() {
-  const serverTime = await getServerTime();
-
-  // All'apertura dell'app, SPIN disattivato 30s
-  cooldownUntil = serverTime + COOLDOWN; // 30 secondi dal momento dell'apertura
-  startSpinCountdown(); // ✅ parte il countdown sul pulsante
-
-  // Leggi punti e spinCount salvati
-  points = Number(localStorage.getItem("points")) || 0;
-  spinCount = Number(localStorage.getItem("spinCount")) || 0;
-
-  // Aggiorna UI
-  pointsEl.textContent = points;
-  updateWithdraw();
-}
-  function startSpinCountdown() {
-  const interval = setInterval(async () => {
-    const serverTime = await getServerTime();
-    if (serverTime >= cooldownUntil) {
-      spinBtn.disabled = false;
-      spinBtn.textContent = "SPIN";
-      clearInterval(interval);
-    } else {
-      const diff = cooldownUntil - serverTime;
-      const seconds = Math.ceil(diff / 1000);
-      spinBtn.textContent = `Wait ${seconds}s`;
-      spinBtn.disabled = true;
-    }
-  }, 1000);
-  }
-
-// Avvio iniziale
-initializeCooldown();
- 
 // ---------------- UI ----------------
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
@@ -232,27 +184,18 @@ drawWheel();
 // ---------------- COUNTDOWN ----------------
 function updateSpinButton() {
   const now = Date.now();
-
   if (now < cooldownUntil) {
     const diff = cooldownUntil - now;
-
-    if (diff <= 60000) {
-      // sotto 1 minuto → mostra secondi
-      const seconds = Math.ceil(diff / 1000);
-      spinBtn.textContent = `Wait ${seconds}s`;
-    } else {
-      // sopra 1 minuto → mostra ore/minuti
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      spinBtn.textContent = `Next spin in ${h}h ${m}m`;
-    }
-
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
     spinBtn.disabled = true;
+    spinBtn.textContent = `Next spin in ${h}h ${m}m`;
   } else {
     spinBtn.disabled = false;
     spinBtn.textContent = "SPIN";
   }
 }
+
 // ---------------- WITHDRAW ----------------
 function updateWithdraw() {
   if (points >= WITHDRAW_POINTS) {
@@ -261,7 +204,6 @@ function updateWithdraw() {
   }
 }
 withdrawBtn.onclick = () => {
-  logEvent(analytics, 'withdraw_click'); // 🔥 AGGIUNTO
   if (!withdrawBtn.disabled) {
     window.open(WITHDRAW_FORM, "_blank");
   }
@@ -283,7 +225,6 @@ window.addEventListener("load", showBanner);
 
 // ---------------- REWARD AD ALL'AVVIO ----------------
 function showRewardAd() {
-  logEvent(analytics, 'reward_shown'); // 🔥 AGGIUNTO
   if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
     WTN.AdMob.rewardsAd({
       adId: "ca-app-pub-9251543522779819/1658358029", // IL TUO ID REWARD AD QUI
@@ -293,36 +234,12 @@ function showRewardAd() {
     setTimeout(showRewardAd, 500);
   }
 }
-  // ---------------- INTERSTITIAL ----------------
-function showInterstitialAd() {
-  logEvent(analytics, 'interstitial_shown'); // 🔥 AGGIUNTO
-  if (window.WTN && WTN.AdMob && WTN.AdMob.interstitialAd) {
-    WTN.AdMob.interstitialAd({
-      adId: "ca-app-pub-9251543522779819/1397635977", // inserisci qui il tuo ID interstitial
-      autoShow: true,
-      onAdClosed: function() {
-        console.log("Interstitial chiuso");
-      }
-    });
-  } else {
-    setTimeout(showInterstitialAd, 500);
-  }
-}
-  // ---------------- INTERSTITIAL TIMER AFFIDABILE ----------------
-window.addEventListener("load", () => {
-  setInterval(() => {
-    if (window.WTN && WTN.AdMob && !WTN.AdMob.isAdShowing) {
-      showInterstitialAd();
-    }
-  }, 60000);
-});
 window.addEventListener("load", showRewardAd);
 
 // ---------------- SPIN FLOW ----------------
-spinBtn.onclick = async () => {
-  logEvent(analytics, 'spin_click');
+spinBtn.onclick = () => {
   spinBtn.disabled = true;
-  await startSpin(); // serve perché startSpin() ora è async
+  startSpin();
 };
 
 window.onAdCompleted = function () {
@@ -330,66 +247,34 @@ window.onAdCompleted = function () {
   startSpin();
 };
 
-async function startSpin() {
+function startSpin() {
   const index = sectors.findIndex(s => s.label === "10 PT");
   const arc = 360 / sectors.length;
 
   canvas.style.transition = "none";
   canvas.style.transform = "rotate(0deg)";
 
-  setTimeout(async () => {
+  setTimeout(() => {
     const rotation = 720 + (270 - index * arc - arc / 2);
     canvas.style.transition = "transform 4s cubic-bezier(.17,.67,.12,.99)";
     canvas.style.transform = `rotate(${rotation}deg)`;
-
-    // Dopo che la ruota termina (4s)
-    setTimeout(async () => {
-      logEvent(analytics, 'spin_complete');
-      points += FIXED_REWARD;
-      localStorage.setItem("points", points);
-
-      // Aggiorna contatore spin
-      spinCount++;
-      localStorage.setItem("spinCount", spinCount);
-
-      // Prendi tempo server
-      const serverTime = await getServerTime();
-
-      if (spinCount >= SPIN_LIMIT) {
-    cooldownUntil = serverTime + BLOCK_AFTER_LIMIT; // blocco 12 ore
-    localStorage.setItem("cooldownUntil", cooldownUntil);
-    spinCount = 0; // reset contatore per il prossimo ciclo
-    localStorage.setItem("spinCount", spinCount);
-
-    // 🟢 PROGRAMMA NOTIFICA DOPO 12 ORE
-    if (window.WTN && WTN.Notifications) {
-        WTN.Notifications.schedule({
-            id: "spinReady",  // ID univoco
-            title: "Spin Ready!",
-            text: "Le 12 ore sono passate. Torna a girare la ruota!",
-            at: cooldownUntil,  // momento in cui si riattiva il pulsante
-            sound: "default"    // oppure il nome di un suono personalizzato incluso nell'app
-        });
-    }
-} else {
-    cooldownUntil = serverTime + COOLDOWN; // 30 secondi tra spin
-    localStorage.setItem("cooldownUntil", cooldownUntil);
-      }
-
-      pointsEl.textContent = points;
-      updateWithdraw();
-      updateSpinButton();
-
-      // Mostra interstitial dopo lo spin
-      showInterstitialAd();
-
-    }, 4000); // 4 secondi per animazione ruota
   }, 50);
+
+  setTimeout(() => {
+    points += FIXED_REWARD;
+    localStorage.setItem("points", points);
+
+    cooldownUntil = Date.now() + COOLDOWN;
+    localStorage.setItem("cooldownUntil", cooldownUntil);
+
+    pointsEl.textContent = points;
+    updateWithdraw();
+    updateSpinButton();
+  }, 4000);
 }
 
 updateWithdraw();
 updateSpinButton();
-setInterval(updateSpinButton, 1000);
 </script>
 
 </body>
