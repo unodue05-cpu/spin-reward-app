@@ -80,7 +80,6 @@ canvas {
 }
 </style>
 
-<!-- FIREBASE (INVARIATO) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
@@ -145,10 +144,8 @@ const sectors = [
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
 let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
-
-// Nuove variabili per sequenza spin
 let spinCount = Number(localStorage.getItem("spinCount")) || 0;
-let spinSequenceActive = true; // sequenza 100 spin attiva
+let spinSequenceActive = true;
 
 // ---------------- UI ----------------
 const canvas = document.getElementById("wheel");
@@ -184,7 +181,20 @@ function drawWheel() {
 }
 drawWheel();
 
-// ---------------- SPIN BUTTON ----------------
+// ---------------- WITHDRAW ----------------
+function updateWithdraw() {
+  if (points >= WITHDRAW_POINTS) {
+    withdrawBtn.disabled = false;
+    withdrawBtn.classList.add("enabled");
+  }
+}
+withdrawBtn.onclick = () => {
+  if (!withdrawBtn.disabled) {
+    window.open(WITHDRAW_FORM, "_blank");
+  }
+};
+
+// ---------------- SPIN BUTTON LOGIC ----------------
 function updateSpinButton() {
   const now = Date.now();
 
@@ -196,8 +206,12 @@ function updateSpinButton() {
     spinBtn.disabled = true;
     spinBtn.textContent = `Next spin in ${h}h ${m}m`;
     setTimeout(updateSpinButton, 60000); // aggiorna ogni minuto
+  } else if (!spinSequenceActive && now >= cooldownUntil) {
+    // 12 ore finite → riattiva sequenza
+    spinSequenceActive = true;
+    updateSpinButton();
   } else if (spinSequenceActive) {
-    // Countdown iniziale di 30 secondi all'apertura
+    // Countdown iniziale 30 secondi
     spinBtn.disabled = true;
     let countdown = 30;
     spinBtn.textContent = `Wait ${countdown}s`;
@@ -214,50 +228,6 @@ function updateSpinButton() {
     }, 1000);
   }
 }
-
-// ---------------- WITHDRAW ----------------
-function updateWithdraw() {
-  if (points >= WITHDRAW_POINTS) {
-    withdrawBtn.disabled = false;
-    withdrawBtn.classList.add("enabled");
-  }
-}
-withdrawBtn.onclick = () => {
-  if (!withdrawBtn.disabled) {
-    window.open(WITHDRAW_FORM, "_blank");
-  }
-};
-
-// ---------------- BANNER ----------------
-function showBanner() {
-  if (window.WTN && WTN.AdMob && WTN.AdMob.bannerAd) {
-    WTN.AdMob.bannerAd({
-      adId: "ca-app-pub-9251543522779819/9330839613",
-      position: "bottom",
-      autoShow: true
-    });
-  } else {
-    setTimeout(showBanner, 500);
-  }
-}
-window.addEventListener("load", showBanner);
-
-// ---------------- REWARD AD ----------------
-function showRewardAd() {
-  if (window.WTN && WTN.AdMob && WTN.AdMob.rewardsAd) {
-    WTN.AdMob.rewardsAd({
-      adId: "ca-app-pub-9251543522779819/1658358029",
-      rewardsAdCallback: onAdCompleted
-    });
-  } else {
-    setTimeout(showRewardAd, 500);
-  }
-}
-window.addEventListener("load", showRewardAd);
-
-window.onAdCompleted = function () {
-  startSpin();
-};
 
 // ---------------- SPIN FLOW ----------------
 spinBtn.onclick = () => {
@@ -279,19 +249,17 @@ function startSpin() {
   }, 50);
 
   setTimeout(() => {
-    // Aggiungi punti
     points += FIXED_REWARD;
     localStorage.setItem("points", points);
     pointsEl.textContent = points;
 
-    // Aggiorna spinCount
     spinCount++;
     localStorage.setItem("spinCount", spinCount);
 
     updateWithdraw();
 
     if (spinCount < 100) {
-      // Countdown 10 secondi tra spin
+      // Countdown 10 secondi
       spinBtn.disabled = true;
       let countdown = 10;
       const interval = setInterval(() => {
@@ -305,7 +273,7 @@ function startSpin() {
         }
       }, 1000);
     } else {
-      // Dopo 100 spin: countdown 12 ore
+      // Dopo 100 spin → 12 ore cooldown
       spinBtn.disabled = true;
       spinSequenceActive = false;
       cooldownUntil = Date.now() + 12 * 60 * 60 * 1000;
