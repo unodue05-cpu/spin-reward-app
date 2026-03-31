@@ -130,9 +130,6 @@ const FIXED_REWARD = 10;
 const WITHDRAW_POINTS = 20000;
 const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
 
-// 👉 METTI QUI IL TUO ID INTERSTITIAL
-const INTERSTITIAL_ID = "ca-app-pub-9251543522779819/XXXXXXXXXX";
-
 const sectors = [
   { label: "120 PT", color: "#27ae60" },
   { label: "100 PT", color: "#2ecc71" },
@@ -197,33 +194,24 @@ withdrawBtn.onclick = () => {
   }
 };
 
-// ---------------- INTERSTITIAL ----------------
-function showInterstitial() {
-  if (window.WTN && WTN.AdMob && WTN.AdMob.interstitialAd) {
-    WTN.AdMob.interstitialAd({
-      adId: INTERSTITIAL_ID,
-      autoShow: true
-    });
-  } else {
-    setTimeout(showInterstitial, 500);
-  }
-}
-
 // ---------------- SPIN BUTTON LOGIC ----------------
 function updateSpinButton() {
   const now = Date.now();
 
+  // Se siamo in cooldown 12 ore
   if (!spinSequenceActive && now < cooldownUntil) {
     let diff = cooldownUntil - now;
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     spinBtn.disabled = true;
     spinBtn.textContent = `Next spin in ${h}h ${m}m`;
-    setTimeout(updateSpinButton, 60000);
+    setTimeout(updateSpinButton, 60000); // aggiorna ogni minuto
   } else if (!spinSequenceActive && now >= cooldownUntil) {
+    // 12 ore finite → riattiva sequenza
     spinSequenceActive = true;
     updateSpinButton();
   } else if (spinSequenceActive) {
+    // Countdown iniziale 30 secondi
     spinBtn.disabled = true;
     let countdown = 30;
     spinBtn.textContent = `Wait ${countdown}s`;
@@ -270,12 +258,8 @@ function startSpin() {
 
     updateWithdraw();
 
-    // 🔥 INTERSTITIAL OGNI 3 SPIN (DOPO ANIMAZIONE)
-    if (spinCount % 3 === 0) {
-      setTimeout(showInterstitial, 500);
-    }
-
     if (spinCount < 100) {
+      // Countdown 10 secondi
       spinBtn.disabled = true;
       let countdown = 10;
       const interval = setInterval(() => {
@@ -289,6 +273,7 @@ function startSpin() {
         }
       }, 1000);
     } else {
+      // Dopo 100 spin → 12 ore cooldown
       spinBtn.disabled = true;
       spinSequenceActive = false;
       cooldownUntil = Date.now() + 12 * 60 * 60 * 1000;
