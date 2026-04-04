@@ -261,13 +261,8 @@ adCounter++;
 localStorage.setItem("adCounter", adCounter);
 
 if (adCounter >= 3) {
-  if (!window.Android) {
-  window.Android = {
-    showInterstitial: function () {
-      alert("TEST AD MOSTRATA");
-    }
-  };
-  }
+  
+  
   showInterstitialAd();
   adCounter = 0;
   localStorage.setItem("adCounter", adCounter);
