@@ -145,6 +145,7 @@ const sectors = [
 let points = Number(localStorage.getItem("points")) || 0;
 let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
 let spinCount = Number(localStorage.getItem("spinCount")) || 0;
+let adCounter = Number(localStorage.getItem("adCounter")) || 0;
 let spinSequenceActive = true;
 
 // ---------------- UI ----------------
@@ -255,6 +256,22 @@ function startSpin() {
 
     spinCount++;
     localStorage.setItem("spinCount", spinCount);
+    // ---- INTERSTITIAL OGNI 3 SPIN ----
+adCounter++;
+localStorage.setItem("adCounter", adCounter);
+
+if (adCounter >= 3) {
+  if (!window.Android) {
+  window.Android = {
+    showInterstitial: function () {
+      alert("TEST AD MOSTRATA");
+    }
+  };
+  }
+  showInterstitialAd();
+  adCounter = 0;
+  localStorage.setItem("adCounter", adCounter);
+}
 
     updateWithdraw();
 
@@ -285,7 +302,11 @@ function startSpin() {
 
   }, 4000);
 }
-
+function showInterstitialAd() {
+  if (window.Android && typeof window.Android.showInterstitial === "function") {
+    window.Android.showInterstitial();
+  }
+  }
 // ---------------- AVVIO ----------------
 updateWithdraw();
 updateSpinButton();
