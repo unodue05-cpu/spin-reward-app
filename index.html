@@ -118,6 +118,32 @@ canvas {
 
 <button id="spinBtn">SPIN</button>
 <button id="withdrawBtn" disabled>WITHDRAW</button>
+<!-- Aggiungi il bottone per il reward ad -->
+<button id="rewardBtn">Watch Reward Ad</button>
+
+<script>
+// ---------------- CONFIG REWARD ----------------
+const REWARD_POINTS = 50;
+const rewardBtn = document.getElementById("rewardBtn");
+
+// Gestione reward ad opzionale
+rewardBtn.onclick = () => {
+  // Mostra la reward ad
+  if (window.Android && typeof window.Android.showRewardAd === "function") {
+    window.Android.showRewardAd();
+  } else {
+    alert("TEST REWARD AD MOSTRATA");
+  }
+
+  // Aggiunge punti al click
+  points += REWARD_POINTS;
+  localStorage.setItem("points", points);
+  pointsEl.textContent = points;
+
+  // Aggiorna pulsante withdraw se raggiunti i punti
+  updateWithdraw();
+};
+</script>
 
 <div class="small">
 Rewards are promotional and subject to availability.<br>
