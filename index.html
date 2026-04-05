@@ -32,12 +32,9 @@ canvas {
   top:-10px;
   left:50%;
   transform:translateX(-50%) rotate(180deg);
-  width:0;
-  height:0;
   border-left:12px solid transparent;
   border-right:12px solid transparent;
   border-bottom:20px solid red;
-  z-index: 10;
 }
 
 #spinBtn {
@@ -79,25 +76,6 @@ canvas {
   margin-top:6px;
 }
 </style>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCdXbufEBn45FH-JJpRrWmbSpdY_n-DZf4",
-    authDomain: "spinrewardapp-56e7f.firebaseapp.com",
-    projectId: "spinrewardapp-56e7f",
-    storageBucket: "spinrewardapp-56e7f.firebasestorage.app",
-    messagingSenderId: "373874094522",
-    appId: "1:373874094522:web:4d2b83a58d1cde08c02d83",
-    measurementId: "G-Z604SL4NPK"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
-
 </head>
 
 <body>
@@ -118,54 +96,14 @@ canvas {
 
 <button id="spinBtn">SPIN</button>
 <button id="withdrawBtn" disabled>WITHDRAW</button>
-<!-- Aggiungi il bottone per il reward ad -->
 <button id="rewardBtn">Watch Reward Ad</button>
-
-<script>
-// ---------------- CONFIG REWARD ----------------
-const REWARD_POINTS = 50;
-const rewardBtn = document.getElementById("rewardBtn");
-
-// Gestione reward ad opzionale
-rewardBtn.onclick = () => {
-  // Mostra la reward ad
-  if (window.Android && typeof window.Android.showRewardAd === "function") {
-    window.Android.showRewardAd();
-  } else {
-    alert("TEST REWARD AD MOSTRATA");
-  }
-
-  // Aggiunge punti al click
-  points += REWARD_POINTS;
-  localStorage.setItem("points", points);
-  pointsEl.textContent = points;
-
-  // Aggiorna pulsante withdraw se raggiunti i punti
-  updateWithdraw();
-};
-</script>
-
-<div class="small">
-Rewards are promotional and subject to availability.<br>
-No cash value. Not guaranteed.
-</div>
 
 <script>
 // ---------------- CONFIG ----------------
 const FIXED_REWARD = 10;
+const REWARD_POINTS = 50;
 const WITHDRAW_POINTS = 20000;
 const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
-
-const sectors = [
-  { label: "120 PT", color: "#27ae60" },
-  { label: "100 PT", color: "#2ecc71" },
-  { label: "50 PT",  color: "#f1c40f" },
-  { label: "25 PT",  color: "#f39c12" },
-  { label: "15 PT",  color: "#e67e22" },
-  { label: "15 PT",  color: "#d35400" },
-  { label: "10 PT",  color: "#c0392b" },
-  { label: "0 PT",   color: "#7f8c8d" }
-];
 
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
@@ -179,11 +117,23 @@ const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 const spinBtn = document.getElementById("spinBtn");
 const withdrawBtn = document.getElementById("withdrawBtn");
+const rewardBtn = document.getElementById("rewardBtn");
 const pointsEl = document.getElementById("points");
 
 pointsEl.textContent = points;
 
-// ---------------- DRAW WHEEL ----------------
+// ---------------- WHEEL ----------------
+const sectors = [
+  { label: "120 PT", color: "#27ae60" },
+  { label: "100 PT", color: "#2ecc71" },
+  { label: "50 PT",  color: "#f1c40f" },
+  { label: "25 PT",  color: "#f39c12" },
+  { label: "15 PT",  color: "#e67e22" },
+  { label: "15 PT",  color: "#d35400" },
+  { label: "10 PT",  color: "#c0392b" },
+  { label: "0 PT",   color: "#7f8c8d" }
+];
+
 function drawWheel() {
   const r = canvas.width / 2;
   const arc = (2 * Math.PI) / sectors.length;
@@ -215,53 +165,60 @@ function updateWithdraw() {
     withdrawBtn.classList.add("enabled");
   }
 }
+
 withdrawBtn.onclick = () => {
   if (!withdrawBtn.disabled) {
     window.open(WITHDRAW_FORM, "_blank");
   }
 };
 
-// ---------------- SPIN BUTTON LOGIC ----------------
-function updateSpinButton() {
-  const now = Date.now();
+// ---------------- REWARD ----------------
+rewardBtn.onclick = () => {
+  if (window.Android && typeof window.Android.showRewardAd === "function") {
+    window.Android.showRewardAd();
+  } else {
+    alert("TEST REWARD");
+    giveReward();
+  }
+};
 
-  // Se siamo in cooldown 12 ore
-  if (!spinSequenceActive && now < cooldownUntil) {
-    let diff = cooldownUntil - now;
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    spinBtn.disabled = true;
-    spinBtn.textContent = `Next spin in ${h}h ${m}m`;
-    setTimeout(updateSpinButton, 60000); // aggiorna ogni minuto
-  } else if (!spinSequenceActive && now >= cooldownUntil) {
-    // 12 ore finite → riattiva sequenza
-    spinSequenceActive = true;
-    updateSpinButton();
-  } else if (spinSequenceActive) {
-    // Countdown iniziale 30 secondi
-    spinBtn.disabled = true;
-    let countdown = 30;
-    spinBtn.textContent = `Wait ${countdown}s`;
+function giveReward() {
+  points += REWARD_POINTS;
+  localStorage.setItem("points", points);
+  pointsEl.textContent = points;
+  updateWithdraw();
+}
 
-    const interval = setInterval(() => {
-      countdown--;
-      if (countdown > 0) {
-        spinBtn.textContent = `Wait ${countdown}s`;
-      } else {
-        clearInterval(interval);
-        spinBtn.disabled = false;
-        spinBtn.textContent = "SPIN";
-      }
-    }, 1000);
+// chiamata da Android
+function onRewardEarned() {
+  giveReward();
+}
+
+// ---------------- INTERSTITIAL ----------------
+function showInterstitialAd() {
+  if (window.Android && typeof window.Android.showInterstitial === "function") {
+    window.Android.showInterstitial();
+  } else {
+    alert("TEST INTERSTITIAL");
   }
 }
 
-// ---------------- SPIN FLOW ----------------
+// ---------------- SPIN BUTTON ----------------
 spinBtn.onclick = () => {
+
+  // 👉 interstitial SOLO su click (policy OK)
+  if (adCounter >= 3) {
+    showInterstitialAd();
+    adCounter = 0;
+    localStorage.setItem("adCounter", adCounter);
+    return;
+  }
+
   spinBtn.disabled = true;
   startSpin();
 };
 
+// ---------------- SPIN ----------------
 function startSpin() {
   const index = sectors.findIndex(s => s.label === "10 PT");
   const arc = 360 / sectors.length;
@@ -276,61 +233,27 @@ function startSpin() {
   }, 50);
 
   setTimeout(() => {
+
     points += FIXED_REWARD;
     localStorage.setItem("points", points);
     pointsEl.textContent = points;
 
     spinCount++;
     localStorage.setItem("spinCount", spinCount);
-    // ---- INTERSTITIAL OGNI 3 SPIN ----
-adCounter++;
-localStorage.setItem("adCounter", adCounter);
 
-if (adCounter >= 3) {
-  
-  
-  showInterstitialAd();
-  adCounter = 0;
-  localStorage.setItem("adCounter", adCounter);
-}
+    // conta per interstitial
+    adCounter++;
+    localStorage.setItem("adCounter", adCounter);
 
     updateWithdraw();
 
-    if (spinCount < 100) {
-      // Countdown 10 secondi
-      spinBtn.disabled = true;
-      let countdown = 10;
-      const interval = setInterval(() => {
-        countdown--;
-        if (countdown > 0) {
-          spinBtn.textContent = `Wait ${countdown}s`;
-        } else {
-          clearInterval(interval);
-          spinBtn.disabled = false;
-          spinBtn.textContent = "SPIN";
-        }
-      }, 1000);
-    } else {
-      // Dopo 100 spin → 12 ore cooldown
-      spinBtn.disabled = true;
-      spinSequenceActive = false;
-      cooldownUntil = Date.now() + 12 * 60 * 60 * 1000;
-      localStorage.setItem("cooldownUntil", cooldownUntil);
-      spinBtn.textContent = "Next spin in 12h 0m";
-      spinCount = 0;
-      localStorage.setItem("spinCount", spinCount);
-    }
+    spinBtn.disabled = false;
 
   }, 4000);
 }
-function showInterstitialAd() {
-  if (window.Android && typeof window.Android.showInterstitial === "function") {
-    window.Android.showInterstitial();
-  }
-  }
+
 // ---------------- AVVIO ----------------
 updateWithdraw();
-updateSpinButton();
 
 </script>
 </body>
