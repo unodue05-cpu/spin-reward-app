@@ -32,9 +32,12 @@ canvas {
   top:-10px;
   left:50%;
   transform:translateX(-50%) rotate(180deg);
+  width:0;
+  height:0;
   border-left:12px solid transparent;
   border-right:12px solid transparent;
   border-bottom:20px solid red;
+  z-index: 10;
 }
 
 #spinBtn {
@@ -70,12 +73,43 @@ canvas {
   cursor:pointer;
 }
 
+#rewardBtn {
+  margin-top:10px;
+  padding:12px 36px;
+  font-size:16px;
+  font-weight:bold;
+  background:#3498db;
+  color:#ffffff;
+  border:none;
+  border-radius:40px;
+  cursor:pointer;
+}
+
 .small {
   font-size:12px;
   color:#aaa;
   margin-top:6px;
 }
 </style>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdXbufEBn45FH-JJpRrWmbSpdY_n-DZf4",
+    authDomain: "spinrewardapp-56e7f.firebaseapp.com",
+    projectId: "spinrewardapp-56e7f",
+    storageBucket: "spinrewardapp-56e7f.firebasestorage.app",
+    messagingSenderId: "373874094522",
+    appId: "1:373874094522:web:4d2b83a58d1cde08c02d83",
+    measurementId: "G-Z604SL4NPK"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+
 </head>
 
 <body>
@@ -98,12 +132,28 @@ canvas {
 <button id="withdrawBtn" disabled>WITHDRAW</button>
 <button id="rewardBtn">Watch Reward Ad</button>
 
+<div class="small">
+Rewards are promotional and subject to availability.<br>
+No cash value. Not guaranteed.
+</div>
+
 <script>
 // ---------------- CONFIG ----------------
 const FIXED_REWARD = 10;
 const REWARD_POINTS = 50;
 const WITHDRAW_POINTS = 20000;
 const WITHDRAW_FORM = "https://forms.gle/kKz8kSW8aoH7Dm7K7";
+
+const sectors = [
+  { label: "120 PT", color: "#27ae60" },
+  { label: "100 PT", color: "#2ecc71" },
+  { label: "50 PT",  color: "#f1c40f" },
+  { label: "25 PT",  color: "#f39c12" },
+  { label: "15 PT",  color: "#e67e22" },
+  { label: "15 PT",  color: "#d35400" },
+  { label: "10 PT",  color: "#c0392b" },
+  { label: "0 PT",   color: "#7f8c8d" }
+];
 
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
@@ -122,18 +172,7 @@ const pointsEl = document.getElementById("points");
 
 pointsEl.textContent = points;
 
-// ---------------- WHEEL ----------------
-const sectors = [
-  { label: "120 PT", color: "#27ae60" },
-  { label: "100 PT", color: "#2ecc71" },
-  { label: "50 PT",  color: "#f1c40f" },
-  { label: "25 PT",  color: "#f39c12" },
-  { label: "15 PT",  color: "#e67e22" },
-  { label: "15 PT",  color: "#d35400" },
-  { label: "10 PT",  color: "#c0392b" },
-  { label: "0 PT",   color: "#7f8c8d" }
-];
-
+// ---------------- DRAW WHEEL ----------------
 function drawWheel() {
   const r = canvas.width / 2;
   const arc = (2 * Math.PI) / sectors.length;
@@ -165,60 +204,61 @@ function updateWithdraw() {
     withdrawBtn.classList.add("enabled");
   }
 }
-
 withdrawBtn.onclick = () => {
   if (!withdrawBtn.disabled) {
     window.open(WITHDRAW_FORM, "_blank");
   }
 };
 
-// ---------------- REWARD ----------------
+// ---------------- REWARD AD ----------------
 rewardBtn.onclick = () => {
   if (window.Android && typeof window.Android.showRewardAd === "function") {
     window.Android.showRewardAd();
-  } else {
-    alert("TEST REWARD");
-    giveReward();
+    points += REWARD_POINTS;
+    localStorage.setItem("points", points);
+    pointsEl.textContent = points;
+    updateWithdraw();
   }
 };
 
-function giveReward() {
-  points += REWARD_POINTS;
-  localStorage.setItem("points", points);
-  pointsEl.textContent = points;
-  updateWithdraw();
-}
+// ---------------- SPIN BUTTON LOGIC ----------------
+function updateSpinButton() {
+  const now = Date.now();
 
-// chiamata da Android
-function onRewardEarned() {
-  giveReward();
-}
+  if (!spinSequenceActive && now < cooldownUntil) {
+    let diff = cooldownUntil - now;
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    spinBtn.disabled = true;
+    spinBtn.textContent = `Next spin in ${h}h ${m}m`;
+    setTimeout(updateSpinButton, 60000);
+  } else if (!spinSequenceActive && now >= cooldownUntil) {
+    spinSequenceActive = true;
+    updateSpinButton();
+  } else if (spinSequenceActive) {
+    spinBtn.disabled = true;
+    let countdown = 30;
+    spinBtn.textContent = `Wait ${countdown}s`;
 
-// ---------------- INTERSTITIAL ----------------
-function showInterstitialAd() {
-  if (window.Android && typeof window.Android.showInterstitial === "function") {
-    window.Android.showInterstitial();
-  } else {
-    alert("TEST INTERSTITIAL");
+    const interval = setInterval(() => {
+      countdown--;
+      if (countdown > 0) {
+        spinBtn.textContent = `Wait ${countdown}s`;
+      } else {
+        clearInterval(interval);
+        spinBtn.disabled = false;
+        spinBtn.textContent = "SPIN";
+      }
+    }, 1000);
   }
 }
 
-// ---------------- SPIN BUTTON ----------------
+// ---------------- SPIN FLOW ----------------
 spinBtn.onclick = () => {
-
-  // 👉 interstitial SOLO su click (policy OK)
-  if (adCounter >= 3) {
-    showInterstitialAd();
-    adCounter = 0;
-    localStorage.setItem("adCounter", adCounter);
-    return;
-  }
-
   spinBtn.disabled = true;
   startSpin();
 };
 
-// ---------------- SPIN ----------------
 function startSpin() {
   const index = sectors.findIndex(s => s.label === "10 PT");
   const arc = 360 / sectors.length;
@@ -233,7 +273,6 @@ function startSpin() {
   }, 50);
 
   setTimeout(() => {
-
     points += FIXED_REWARD;
     localStorage.setItem("points", points);
     pointsEl.textContent = points;
@@ -241,20 +280,47 @@ function startSpin() {
     spinCount++;
     localStorage.setItem("spinCount", spinCount);
 
-    // conta per interstitial
+    // ---- INTERSTITIAL AD OGNI 3 SPIN ----
     adCounter++;
     localStorage.setItem("adCounter", adCounter);
+    if (adCounter >= 3) {
+      if (window.Android && typeof window.Android.showInterstitial === "function") {
+        window.Android.showInterstitial();
+      }
+      adCounter = 0;
+      localStorage.setItem("adCounter", adCounter);
+    }
 
     updateWithdraw();
 
-    spinBtn.disabled = false;
-
+    if (spinCount < 100) {
+      let countdown = 10;
+      spinBtn.disabled = true;
+      const interval = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+          clearInterval(interval);
+          spinBtn.disabled = false;
+          spinBtn.textContent = "SPIN";
+        } else {
+          spinBtn.textContent = `Wait ${countdown}s`;
+        }
+      }, 1000);
+    } else {
+      spinBtn.disabled = true;
+      spinSequenceActive = false;
+      cooldownUntil = Date.now() + 12 * 60 * 60 * 1000;
+      localStorage.setItem("cooldownUntil", cooldownUntil);
+      spinBtn.textContent = "Next spin in 12h 0m";
+      spinCount = 0;
+      localStorage.setItem("spinCount", spinCount);
+    }
   }, 4000);
 }
 
-// ---------------- AVVIO ----------------
+// ---------------- INIT ----------------
 updateWithdraw();
-
+updateSpinButton();
 </script>
 </body>
 </html>
