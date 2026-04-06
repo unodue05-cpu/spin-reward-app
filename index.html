@@ -32,12 +32,9 @@ canvas {
   top:-10px;
   left:50%;
   transform:translateX(-50%) rotate(180deg);
-  width:0;
-  height:0;
   border-left:12px solid transparent;
   border-right:12px solid transparent;
   border-bottom:20px solid red;
-  z-index: 10;
 }
 
 #spinBtn {
@@ -63,7 +60,7 @@ canvas {
   font-size:16px;
   font-weight:bold;
   background:#22c55e;
-  color:#ffffff;
+  color:#fff;
   border:none;
   border-radius:40px;
 }
@@ -74,7 +71,7 @@ canvas {
   font-size:16px;
   font-weight:bold;
   background:#3498db;
-  color:#ffffff;
+  color:#fff;
   border:none;
   border-radius:40px;
 }
@@ -95,7 +92,7 @@ canvas {
 
 <div class="small">
 <strong>20,000 Points – Reward</strong><br>
-<strong>Gift Card - PayPal</strong>
+Gift Card - PayPal
 </div>
 
 <div id="wheelContainer">
@@ -119,18 +116,16 @@ const FIXED_REWARD = 10;
 const REWARD_POINTS = 50;
 const WITHDRAW_POINTS = 20000;
 
-const REWARD_ID = "ca-app-pub-9251543522779819/9330839613";
+// TUOI ID CORRETTI
+const APP_ID = "ca-app-pub-9251543522779819~6562048968";
+const REWARD_ID = "ca-app-pub-9251543522779819/1658358029";
 const INTERSTITIAL_ID = "ca-app-pub-9251543522779819/1397635977";
+const BANNER_ID = "ca-app-pub-9251543522779819/9330839613";
 
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
-let spinCount = Number(localStorage.getItem("spinCount")) || 0;
 let adCounter = Number(localStorage.getItem("adCounter")) || 0;
 
-let cooldownUntil = Number(localStorage.getItem("cooldownUntil")) || 0;
-let spinSequenceActive = true;
-
-// ---------------- UI ----------------
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 const spinBtn = document.getElementById("spinBtn");
@@ -140,7 +135,7 @@ const pointsEl = document.getElementById("points");
 
 pointsEl.textContent = points;
 
-// ---------------- DRAW WHEEL (ORIGINALE) ----------------
+// ---------------- WHEEL ORIGINALE ----------------
 const sectors = [
   { label: "120 PT", color: "#27ae60" },
   { label: "100 PT", color: "#2ecc71" },
@@ -217,11 +212,11 @@ function showInterstitial() {
 
   WTN.AdMob.fullScreenAd({
     adId: INTERSTITIAL_ID,
-    fullScreenAdCallback: (v) => console.log(v)
+    fullScreenAdCallback: (v) => console.log("Interstitial:", v)
   });
 }
 
-// ---------------- SPIN ORIGINALE ----------------
+// ---------------- SPIN ----------------
 spinBtn.onclick = () => {
   spinBtn.disabled = true;
   startSpin();
@@ -247,13 +242,10 @@ function startSpin() {
     localStorage.setItem("points", points);
     pointsEl.textContent = points;
 
-    spinCount++;
     adCounter++;
-
-    localStorage.setItem("spinCount", spinCount);
     localStorage.setItem("adCounter", adCounter);
 
-    // 🎯 INTERSTITIAL DOPO 3 SPIN
+    // INTERSTITIAL DOPO 3 SPIN
     if (adCounter >= 3) {
       showInterstitial();
       adCounter = 0;
@@ -261,7 +253,6 @@ function startSpin() {
     }
 
     spinBtn.disabled = false;
-    spinBtn.textContent = "SPIN";
 
   }, 4000);
 }
