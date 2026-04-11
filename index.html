@@ -65,17 +65,6 @@ canvas {
   border-radius:40px;
 }
 
-#rewardBtn {
-  margin-top:10px;
-  padding:12px 36px;
-  font-size:16px;
-  font-weight:bold;
-  background:#3498db;
-  color:#fff;
-  border:none;
-  border-radius:40px;
-}
-
 .small {
   font-size:12px;
   color:#aaa;
@@ -102,7 +91,6 @@ Gift Card - PayPal
 
 <button id="spinBtn">SPIN</button>
 <button id="withdrawBtn">WITHDRAW</button>
-<button id="rewardBtn">Watch Reward Ad</button>
 
 <div class="small">
 Rewards are promotional and subject to availability.<br>
@@ -113,12 +101,10 @@ No cash value. Not guaranteed.
 
 // ---------------- CONFIG ----------------
 const FIXED_REWARD = 10;
-const REWARD_POINTS = 50;
 const WITHDRAW_POINTS = 20000;
 
 // TUOI ID CORRETTI
 const APP_ID = "ca-app-pub-9251543522779819~6562048968";
-const REWARD_ID = "ca-app-pub-9251543522779819/1658358029";
 const INTERSTITIAL_ID = "ca-app-pub-9251543522779819/1397635977";
 const BANNER_ID = "ca-app-pub-9251543522779819/9330839613";
 
@@ -130,7 +116,6 @@ const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 const spinBtn = document.getElementById("spinBtn");
 const withdrawBtn = document.getElementById("withdrawBtn");
-const rewardBtn = document.getElementById("rewardBtn");
 const pointsEl = document.getElementById("points");
 
 pointsEl.textContent = points;
@@ -170,40 +155,6 @@ function drawWheel() {
   });
 }
 drawWheel();
-
-// ---------------- REWARD AD ----------------
-rewardBtn.onclick = () => {
-
-  if (!window.WTN || !WTN.AdMob) {
-    alert("Ads non pronti");
-    return;
-  }
-
-  WTN.AdMob.rewardsAd({
-    adId: REWARD_ID,
-    rewardsAdCallback: (value) => {
-
-      try {
-        let res = JSON.parse(value);
-
-        if (res.status === "rewardSuccess") {
-          points += REWARD_POINTS;
-          localStorage.setItem("points", points);
-          pointsEl.textContent = points;
-          alert("Reward ricevuta!");
-        }
-
-        if (res.status === "adLoadFailure") {
-          alert("Nessuna pubblicità disponibile");
-        }
-
-      } catch (e) {
-        console.log(e);
-      }
-
-    }
-  });
-};
 
 // ---------------- INTERSTITIAL ----------------
 function showInterstitial() {
@@ -252,7 +203,25 @@ function startSpin() {
       localStorage.setItem("adCounter", adCounter);
     }
 
-    spinBtn.disabled = false;
+    // ⏱️ COUNTDOWN 5 MINUTI (LOOP)
+    let timeLeft = 300;
+    spinBtn.disabled = true;
+
+    const interval = setInterval(() => {
+      timeLeft--;
+
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+
+      spinBtn.textContent = `Wait ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        spinBtn.disabled = false;
+        spinBtn.textContent = "SPIN";
+      }
+
+    }, 1000);
 
   }, 4000);
 }
