@@ -132,15 +132,17 @@ function drawWheel() {
 }
 drawWheel();
 
-// ---------------- LOGICA REWARD AGGIORNATA (NO ERRORE) ----------------
+// ---------------- LOGICA REWARD CORRETTA ----------------
 let isSearchingAd = false;
 
 function tryShowRewardAd() {
-  // Se il sistema non è pronto, invece di dare l'alert, scrive sul pulsante e riprova
-  if (!(window.WTN && WTN.AdMob)) {
+  // CORREZIONE BRIDGE: Controlla sia adMob che AdMob come da documentazione
+  const admobPlugin = window.WTN && (window.WTN.adMob || window.WTN.AdMob);
+
+  if (!admobPlugin) {
     rewardBtn.disabled = true;
     rewardBtn.textContent = "Connecting to AdMob...";
-    setTimeout(tryShowRewardAd, 1500); 
+    setTimeout(tryShowRewardAd, 2000); 
     return;
   }
 
@@ -151,7 +153,7 @@ function tryShowRewardAd() {
   const attempt = () => {
     if (!isSearchingAd) return;
 
-    WTN.AdMob.showRewardAd({
+    admobPlugin.showRewardAd({
       adId: REWARD_ID,
       successCallback: () => {
         isSearchingAd = false;
@@ -163,10 +165,10 @@ function tryShowRewardAd() {
         alert("Success! 50 points added.");
       },
       failCallback: () => {
-        // Riprova ciclicamente finché AdMob non ha un video pronto
+        // Riprova all'infinito ogni 3 secondi se Google non invia il video
         if(isSearchingAd) {
             console.log("Ad not ready yet, retrying...");
-            setTimeout(attempt, 2000); 
+            setTimeout(attempt, 3000); 
         }
       }
     });
@@ -177,17 +179,19 @@ function tryShowRewardAd() {
 
 rewardBtn.onclick = tryShowRewardAd;
 
-// Pre-caricamento
+// Pre-caricamento all'avvio
 window.onload = () => {
-  if (window.WTN && WTN.AdMob && WTN.AdMob.loadRewardAd) {
-     WTN.AdMob.loadRewardAd({ adId: REWARD_ID });
+  const admobPlugin = window.WTN && (window.WTN.adMob || window.WTN.AdMob);
+  if (admobPlugin && admobPlugin.loadRewardAd) {
+     admobPlugin.loadRewardAd({ adId: REWARD_ID });
   }
 };
 
 // ---------------- INTERSTITIAL ----------------
 function showInterstitial() {
-  if (window.WTN && WTN.AdMob) {
-    WTN.AdMob.fullScreenAd({
+  const admobPlugin = window.WTN && (window.WTN.adMob || window.WTN.AdMob);
+  if (admobPlugin) {
+    admobPlugin.fullScreenAd({
       adId: INTERSTITIAL_ID,
       fullScreenAdCallback: (v) => console.log("Interstitial:", v)
     });
