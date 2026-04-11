@@ -37,45 +37,24 @@ canvas {
   border-bottom:20px solid red;
 }
 
-#spinBtn {
-  margin-top:20px;
-  padding:16px 45px;
-  font-size:18px;
-  font-weight:bold;
-  background:#f1c40f;
-  color:#000;
-  border:none;
-  border-radius:40px;
-  width: 80%;
-}
-
-#rewardBtn {
+#spinBtn, #rewardBtn, #withdrawBtn {
   margin-top:10px;
-  padding:12px 30px;
+  padding:14px;
   font-size:16px;
   font-weight:bold;
-  background:#3498db;
-  color:#fff;
   border:none;
   border-radius:40px;
-  width: 80%;
+  width: 85%;
+  cursor: pointer;
 }
+
+#spinBtn { background:#f1c40f; color:#000; margin-top: 20px; }
+#rewardBtn { background:#3498db; color:#fff; }
+#withdrawBtn { background:#22c55e; color:#fff; margin-top: 15px; }
 
 #spinBtn:disabled, #rewardBtn:disabled {
   background:#555;
   color:#aaa;
-}
-
-#withdrawBtn {
-  display:block;
-  margin:14px auto 0 auto;
-  padding:12px 36px;
-  font-size:16px;
-  font-weight:bold;
-  background:#22c55e;
-  color:#fff;
-  border:none;
-  border-radius:40px;
 }
 
 .small {
@@ -92,10 +71,7 @@ canvas {
 
 <div><strong>Points:</strong> <span id="points">0</span></div>
 
-<div class="small">
-<strong>20,000 Points – Reward</strong><br>
-Gift Card - PayPal
-</div>
+<div class="small">20,000 Points – PayPal Gift Card</div>
 
 <div id="wheelContainer">
   <div id="pointer"></div>
@@ -104,23 +80,21 @@ Gift Card - PayPal
 
 <button id="spinBtn">SPIN</button>
 <button id="rewardBtn">EARN 50 PTS (VIDEO)</button>
-
 <button id="withdrawBtn">WITHDRAW</button>
 
 <div class="small">
-Rewards are promotional and subject to availability.<br>
-No cash value. Not guaranteed.
+Rewards are promotional and subject to availability.
 </div>
 
 <script>
 
-// ---------------- CONFIG AGGIORNATA CON I TUOI ID ----------------
+// ---------------- CONFIG ----------------
 const WITHDRAW_POINTS = 20000;
 const FIXED_REWARD = 10;
 
 const BANNER_ID = "ca-app-pub-9251543522779819/9330839613";
 const INTERSTITIAL_ID = "ca-app-pub-9251543522779819/1397635977";
-const REWARD_ID = "ca-app-pub-9251543522779819/1658358029"; // <--- AGGIORNATO
+const REWARD_ID = "ca-app-pub-9251543522779819/1658358029";
 
 // ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
@@ -130,21 +104,16 @@ const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 const spinBtn = document.getElementById("spinBtn");
 const rewardBtn = document.getElementById("rewardBtn");
-const withdrawBtn = document.getElementById("withdrawBtn");
 const pointsEl = document.getElementById("points");
 
 pointsEl.textContent = points;
 
 // ---------------- WHEEL ----------------
 const sectors = [
-  { label: "120 PT", color: "#27ae60" },
-  { label: "100 PT", color: "#2ecc71" },
-  { label: "50 PT",  color: "#f1c40f" },
-  { label: "25 PT",  color: "#f39c12" },
-  { label: "15 PT",  color: "#e67e22" },
-  { label: "15 PT",  color: "#d35400" },
-  { label: "10 PT",  color: "#c0392b" },
-  { label: "0 PT",   color: "#7f8c8d" }
+  { label: "120 PT", color: "#27ae60" }, { label: "100 PT", color: "#2ecc71" },
+  { label: "50 PT",  color: "#f1c40f" }, { label: "25 PT",  color: "#f39c12" },
+  { label: "15 PT",  color: "#e67e22" }, { label: "15 PT",  color: "#d35400" },
+  { label: "10 PT",  color: "#c0392b" }, { label: "0 PT",   color: "#7f8c8d" }
 ];
 
 function drawWheel() {
@@ -152,29 +121,26 @@ function drawWheel() {
   const arc = (2 * Math.PI) / sectors.length;
   sectors.forEach((s, i) => {
     const angle = i * arc;
-    ctx.beginPath();
-    ctx.moveTo(r, r);
+    ctx.beginPath(); ctx.moveTo(r, r);
     ctx.arc(r, r, r, angle, angle + arc);
-    ctx.fillStyle = s.color;
-    ctx.fill();
-    ctx.save();
-    ctx.translate(r, r);
-    ctx.rotate(angle + arc / 2);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 14px Arial";
-    ctx.fillText(s.label, r - 10, 5);
+    ctx.fillStyle = s.color; ctx.fill();
+    ctx.save(); ctx.translate(r, r); ctx.rotate(angle + arc / 2);
+    ctx.textAlign = "right"; ctx.fillStyle = "#fff";
+    ctx.font = "bold 14px Arial"; ctx.fillText(s.label, r - 10, 5);
     ctx.restore();
   });
 }
 drawWheel();
 
-// ---------------- LOGICA REWARD AD INFINITA ----------------
+// ---------------- LOGICA REWARD AGGIORNATA (NO ERRORE) ----------------
 let isSearchingAd = false;
 
 function tryShowRewardAd() {
+  // Se il sistema non è pronto, invece di dare l'alert, scrive sul pulsante e riprova
   if (!(window.WTN && WTN.AdMob)) {
-    alert("Ad system not ready. Be sure you are on a real device.");
+    rewardBtn.disabled = true;
+    rewardBtn.textContent = "Connecting to AdMob...";
+    setTimeout(tryShowRewardAd, 1500); 
     return;
   }
 
@@ -197,9 +163,10 @@ function tryShowRewardAd() {
         alert("Success! 50 points added.");
       },
       failCallback: () => {
-        // Riprova all'infinito ogni 1.5 secondi
+        // Riprova ciclicamente finché AdMob non ha un video pronto
         if(isSearchingAd) {
-            setTimeout(attempt, 1500); 
+            console.log("Ad not ready yet, retrying...");
+            setTimeout(attempt, 2000); 
         }
       }
     });
@@ -210,7 +177,7 @@ function tryShowRewardAd() {
 
 rewardBtn.onclick = tryShowRewardAd;
 
-// Pre-caricamento all'avvio
+// Pre-caricamento
 window.onload = () => {
   if (window.WTN && WTN.AdMob && WTN.AdMob.loadRewardAd) {
      WTN.AdMob.loadRewardAd({ adId: REWARD_ID });
@@ -219,11 +186,12 @@ window.onload = () => {
 
 // ---------------- INTERSTITIAL ----------------
 function showInterstitial() {
-  if (!window.WTN || !WTN.AdMob) return;
-  WTN.AdMob.fullScreenAd({
-    adId: INTERSTITIAL_ID,
-    fullScreenAdCallback: (v) => console.log("Interstitial:", v)
-  });
+  if (window.WTN && WTN.AdMob) {
+    WTN.AdMob.fullScreenAd({
+      adId: INTERSTITIAL_ID,
+      fullScreenAdCallback: (v) => console.log("Interstitial:", v)
+    });
+  }
 }
 
 // ---------------- SPIN ----------------
@@ -259,9 +227,9 @@ function startSpin() {
     let timeLeft = 300;
     const interval = setInterval(() => {
       timeLeft--;
-      let minutes = Math.floor(timeLeft / 60);
-      let seconds = timeLeft % 60;
-      spinBtn.textContent = `Wait ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      let m = Math.floor(timeLeft / 60);
+      let s = timeLeft % 60;
+      spinBtn.textContent = `Wait ${m}:${s < 10 ? '0' : ''}${s}`;
       if (timeLeft <= 0) {
         clearInterval(interval);
         spinBtn.disabled = false;
@@ -272,12 +240,9 @@ function startSpin() {
 }
 
 // ---------------- WITHDRAW ----------------
-withdrawBtn.onclick = () => {
-  if (points >= WITHDRAW_POINTS) {
-    alert("Request sent!");
-  } else {
-    alert("Not enough points.");
-  }
+document.getElementById("withdrawBtn").onclick = () => {
+  if (points >= WITHDRAW_POINTS) { alert("Request sent!"); } 
+  else { alert("You need 20,000 points."); }
 };
 
 </script>
