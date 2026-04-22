@@ -1,102 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://docs.webtonative.com/bridge.js"></script>
 <meta charset="UTF-8">
 <title>Spin & Reward</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  margin:0;
-  padding:20px;
-  font-family: Arial, sans-serif;
-  background:#121212;
-  color:#fff;
-  text-align:center;
+body { margin:0; padding:20px; font-family: Arial, sans-serif; background:#121212; color:#fff; text-align:center; }
+
+/* Contenitore principale della ruota */
+#wheelContainer { 
+  position:relative; 
+  width:300px; 
+  height:300px; 
+  margin:20px auto; 
 }
 
-#wheelContainer {
-  position:relative;
-  width:300px;
-  height:300px;
-  margin:20px auto;
+/* La Ruota (Canvas) */
+canvas { 
+  border-radius:50%; 
+  background:#222; 
+  position: relative; /* Aggiunto per gestire lo z-index */
+  z-index: 1;         /* Livello base per la ruota */
 }
 
-canvas {
-  border-radius:50%;
-  background:#222;
+/* CORREZIONE: La Freccetta Rossa (Pointer) */
+#pointer { 
+  position:absolute; 
+  top:-15px;          /* Leggermente più su per non toccare il bordo */
+  left:50%; 
+  transform:translateX(-50%) rotate(180deg); 
+  border-left:15px solid transparent;  /* Leggermente più larga */
+  border-right:15px solid transparent; /* Leggermente più larga */
+  border-bottom:25px solid red;        /* Leggermente più lunga */
+  
+  /* --- SOLUZIONE QUI --- */
+  z-index: 10;        /* Numero alto per forzarla DAVANTI alla ruota */
+  /* --------------------- */
 }
 
-#pointer {
-  position:absolute;
-  top:-10px;
-  left:50%;
-  transform:translateX(-50%) rotate(180deg);
-  border-left:12px solid transparent;
-  border-right:12px solid transparent;
-  border-bottom:20px solid red;
-}
-
-#spinBtn, #rewardBtn, #withdrawBtn {
-  margin-top:10px;
-  padding:14px;
-  font-size:16px;
-  font-weight:bold;
-  border:none;
-  border-radius:40px;
-  width: 85%;
-  cursor: pointer;
-}
-
+/* Pulsanti e testo */
+#spinBtn, #rewardBtn, #withdrawBtn { margin-top:10px; padding:14px; font-size:16px; font-weight:bold; border:none; border-radius:40px; width: 85%; cursor: pointer; }
 #spinBtn { background:#f1c40f; color:#000; margin-top: 20px; }
 #rewardBtn { background:#3498db; color:#fff; }
 #withdrawBtn { background:#22c55e; color:#fff; margin-top: 15px; }
-
-#spinBtn:disabled, #rewardBtn:disabled {
-  background:#555;
-  color:#aaa;
-}
-
-.small {
-  font-size:12px;
-  color:#aaa;
-  margin-top:6px;
-}
+#spinBtn:disabled, #rewardBtn:disabled { background:#555; color:#aaa; }
+.small { font-size:12px; color:#aaa; margin-top:6px; }
 </style>
 </head>
 
 <body>
 
 <h2>🎯 Spin & Reward</h2>
-
 <div><strong>Points:</strong> <span id="points">0</span></div>
-
 <div class="small">20,000 Points – PayPal Gift Card</div>
 
 <div id="wheelContainer">
-  <div id="pointer"></div>
-  <canvas id="wheel" width="300" height="300"></canvas>
+  <div id="pointer"></div> <canvas id="wheel" width="300" height="300"></canvas>
 </div>
 
 <button id="spinBtn">SPIN</button>
 <button id="rewardBtn">EARN 50 PTS (VIDEO)</button>
 <button id="withdrawBtn">WITHDRAW</button>
 
-<div class="small">
-Rewards are promotional and subject to availability.
-</div>
-
 <script>
-
-// ---------------- CONFIG ----------------
+// ---------------- CONFIG (Inalterata) ----------------
 const WITHDRAW_POINTS = 20000;
 const FIXED_REWARD = 10;
-
-const BANNER_ID = "ca-app-pub-9251543522779819/9330839613";
 const INTERSTITIAL_ID = "ca-app-pub-9251543522779819/1397635977";
 const REWARD_ID = "ca-app-pub-9251543522779819/1658358029";
 
-// ---------------- STORAGE ----------------
 let points = Number(localStorage.getItem("points")) || 0;
 let adCounter = Number(localStorage.getItem("adCounter")) || 0;
 
@@ -108,7 +82,7 @@ const pointsEl = document.getElementById("points");
 
 pointsEl.textContent = points;
 
-// ---------------- WHEEL ----------------
+// ---------------- WHEEL (Inalterata) ----------------
 const sectors = [
   { label: "120 PT", color: "#27ae60" }, { label: "100 PT", color: "#2ecc71" },
   { label: "50 PT",  color: "#f1c40f" }, { label: "25 PT",  color: "#f39c12" },
@@ -132,73 +106,47 @@ function drawWheel() {
 }
 drawWheel();
 
-// ---------------- LOGICA REWARD CORRETTA ----------------
-let isSearchingAd = false;
-
+// ---------------- LOGICA REWARD PULITA (Mantenuta) ----------------
 function tryShowRewardAd() {
-  // CORREZIONE BRIDGE: Controlla sia adMob che AdMob come da documentazione
-  const admobPlugin = window.WTN && (window.WTN.adMob || window.WTN.AdMob);
-
-  if (!admobPlugin) {
+  if (window.WTN && window.WTN.adMob) {
     rewardBtn.disabled = true;
-    rewardBtn.textContent = "Connecting to AdMob...";
-    setTimeout(tryShowRewardAd, 2000); 
-    return;
-  }
+    rewardBtn.textContent = "Caricamento...";
 
-  isSearchingAd = true;
-  rewardBtn.disabled = true;
-  rewardBtn.textContent = "Searching Ad...";
-
-  const attempt = () => {
-    if (!isSearchingAd) return;
-
-    admobPlugin.showRewardAd({
+    window.WTN.adMob.showRewardAd({
       adId: REWARD_ID,
-      successCallback: () => {
-        isSearchingAd = false;
+      successCallback: function() {
         points += 50; 
         localStorage.setItem("points", points);
         pointsEl.textContent = points;
         rewardBtn.disabled = false;
         rewardBtn.textContent = "EARN 50 PTS (VIDEO)";
-        alert("Success! 50 points added.");
+        alert("Punti aggiunti con successo!");
       },
-      failCallback: () => {
-        // Riprova all'infinito ogni 3 secondi se Google non invia il video
-        if(isSearchingAd) {
-            console.log("Ad not ready yet, retrying...");
-            setTimeout(attempt, 3000); 
-        }
+      failCallback: function(error) {
+        rewardBtn.disabled = false;
+        rewardBtn.textContent = "EARN 50 PTS (VIDEO)";
+        alert("Video non pronto: " + JSON.stringify(error));
       }
     });
-  };
-
-  attempt();
+  } else {
+    // Questo alert uscirà su CodePen/Browser, è normale.
+    alert("Errore: Il ponte WebToNative non risponde. Bridge undefined.");
+  }
 }
 
 rewardBtn.onclick = tryShowRewardAd;
 
-// Pre-caricamento all'avvio
-window.onload = () => {
-  const admobPlugin = window.WTN && (window.WTN.adMob || window.WTN.AdMob);
-  if (admobPlugin && admobPlugin.loadRewardAd) {
-     admobPlugin.loadRewardAd({ adId: REWARD_ID });
-  }
-};
-
-// ---------------- INTERSTITIAL ----------------
+// ---------------- INTERSTITIAL (Mantenuta) ----------------
 function showInterstitial() {
-  const admobPlugin = window.WTN && (window.WTN.adMob || window.WTN.AdMob);
-  if (admobPlugin) {
-    admobPlugin.fullScreenAd({
+  if (window.WTN && window.WTN.adMob) {
+    window.WTN.adMob.fullScreenAd({
       adId: INTERSTITIAL_ID,
       fullScreenAdCallback: (v) => console.log("Interstitial:", v)
     });
   }
 }
 
-// ---------------- SPIN ----------------
+// ---------------- SPIN (Mantenuta) ----------------
 spinBtn.onclick = () => {
   spinBtn.disabled = true;
   startSpin();
@@ -243,13 +191,11 @@ function startSpin() {
   }, 4000);
 }
 
-// ---------------- WITHDRAW ----------------
 document.getElementById("withdrawBtn").onclick = () => {
   if (points >= WITHDRAW_POINTS) { alert("Request sent!"); } 
   else { alert("You need 20,000 points."); }
 };
 
 </script>
-
 </body>
 </html>
