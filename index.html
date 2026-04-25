@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="https://docs.webtonative.com/bridge.js"></script>
+<script src="https://unpkg.com/webtonative@1.0.96/webtonative.min.js"></script>
+
 <meta charset="UTF-8">
 <title>Spin & Reward</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -108,31 +109,35 @@ drawWheel();
 
 // ---------------- LOGICA REWARD PULITA (Mantenuta) ----------------
 function tryShowRewardAd() {
-  if (window.WTN && window.WTN.adMob) {
-    rewardBtn.disabled = true;
-    rewardBtn.textContent = "Caricamento...";
+    // Prova a trovare il bridge in entrambi i modi possibili
+    const wtnBridge = window.WTN || window.webtonative; 
 
-    window.WTN.adMob.showRewardAd({
-      adId: REWARD_ID,
-      successCallback: function() {
-        points += 50; 
-        localStorage.setItem("points", points);
-        pointsEl.textContent = points;
-        rewardBtn.disabled = false;
-        rewardBtn.textContent = "EARN 50 PTS (VIDEO)";
-        alert("Punti aggiunti con successo!");
-      },
-      failCallback: function(error) {
-        rewardBtn.disabled = false;
-        rewardBtn.textContent = "EARN 50 PTS (VIDEO)";
-        alert("Video non pronto: " + JSON.stringify(error));
-      }
-    });
-  } else {
-    // Questo alert uscirà su CodePen/Browser, è normale.
-    alert("Errore: Il ponte WebToNative non risponde. Bridge undefined.");
-  }
+    if (wtnBridge && wtnBridge.adMob) {
+        rewardBtn.disabled = true;
+        rewardBtn.textContent = "Caricamento...";
+
+        wtnBridge.adMob.showRewardAd({
+            adId: REWARD_ID, // Usa la variabile REWARD_ID che hai già definito sopra
+            success: function(data) {
+                points += 50; 
+                localStorage.setItem("points", points);
+                pointsEl.textContent = points;
+                rewardBtn.disabled = false;
+                rewardBtn.textContent = "EARN 50 PTS (VIDEO)";
+                alert("Punti aggiunti con successo!");
+            },
+            fail: function(data) {
+                rewardBtn.disabled = false;
+                rewardBtn.textContent = "EARN 50 PTS (VIDEO)";
+                alert("Ad non disponibile o errore nel caricamento.");
+            }
+        });
+    } else {
+        // Se vedi questo alert, lo script di WebToNative ancora non funziona nell'APK
+        alert("Errore: Il sistema pubblicitario non è pronto.");
+    }
 }
+
 
 rewardBtn.onclick = tryShowRewardAd;
 
