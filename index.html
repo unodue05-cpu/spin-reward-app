@@ -112,11 +112,11 @@ function tryShowRewardAd() {
     // Prova a trovare il bridge in entrambi i modi possibili
     const wtnBridge = window.WTN || window.webtonative; 
 
-    if (wtnBridge && wtnBridge.adMob) {
+    if (wtnBridge && wtnBridge.AdMob) {
         rewardBtn.disabled = true;
         rewardBtn.textContent = "Caricamento...";
 
-        wtnBridge.adMob.showRewardAd({
+        wtnBridge.AdMob.showRewardAd({
             adId: REWARD_ID, // Usa la variabile REWARD_ID che hai già definito sopra
             success: function(data) {
                 points += 50; 
